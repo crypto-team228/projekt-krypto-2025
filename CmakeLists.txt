@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.15)
+project(projekt-krypto-2025 LANGUAGES CXX)	
+
+set(CMAKE_CXX_STANDARD 17)
+
+# Główna aplikacja
+add_executable(crypto_app src/main.cpp)
+target_include_directories(crypto_app PRIVATE include)
+
+# Testy (opcjonalnie)
+enable_testing()
+add_executable(crypto_tests tests/test_main.cpp)
+add_test(NAME crypto_tests COMMAND crypto_tests)
+	
