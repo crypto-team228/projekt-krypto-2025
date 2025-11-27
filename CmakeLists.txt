@@ -3,12 +3,16 @@ project(projekt-krypto-2025 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Biblioteki zewnętrzne
+add_subdirectory(vendor/cryptopp890)
+
 # Główna aplikacja
 add_executable(crypto_app 
 "src/main.cpp"
 "src/TDES/tdes.cpp"
 "src/TDES/tdes_tables.cpp")
 target_include_directories(crypto_app PRIVATE include)
+target_link_libraries(crypto_app PRIVATE cryptopp)
 
 # Testy (opcjonalnie)
 enable_testing()
