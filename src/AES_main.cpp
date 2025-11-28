@@ -1,6 +1,6 @@
 #include <iostream>
 #include <iomanip>
-#include "aes.cpp"
+#include "AES\aes.hpp"
 
 void printBlock(const AES::State &st, const std::string &label = "")
 {

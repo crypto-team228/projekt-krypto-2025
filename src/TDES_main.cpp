@@ -2,13 +2,6 @@
 #include "mylib.hpp"
 #include "TDES/tdes.hpp"
 
-#include <cryptlib.h>
-#include <modes.h>
-#include <des.h>
-
-using namespace CryptoPP;
-using byte = CryptoPP::byte;
-
 int main() {
 	TDES tdes = TDES();
 	std::string plaintext1 = "123456ABCD132536";

@@ -1,22 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
-project(projekt-krypto-2025 LANGUAGES CXX)	
+project(project-krypto)
 
-set(CMAKE_CXX_STANDARD 17)
+add_subdirectory("src")
+add_subdirectory("src\\AES")
+add_subdirectory("src\\TDES")
+add_subdirectory("tests")
 
-# Biblioteki zewnętrzne
-add_subdirectory(vendor/cryptopp890)
-
-# Główna aplikacja
-add_executable(crypto_app 
-"src/main.cpp"
-"src/TDES/tdes.cpp"
-"src/TDES/tdes_tables.cpp")
-target_include_directories(crypto_app PRIVATE include)
-target_link_libraries(crypto_app PRIVATE cryptopp)
-
-# Testy (opcjonalnie)
-enable_testing()
-add_executable(crypto_tests 
-tests/test_main.cpp)
-add_test(NAME crypto_tests COMMAND crypto_tests)
-	
+add_executable(AES_app "src\\AES_main.cpp")
+add_executable(TDES_app "src\\TDES_main.cpp")
+target_link_libraries(AES_app PRIVATE _src _src_AES _src_TDES _tests)
+target_link_libraries(TDES_app PRIVATE _src _src_AES _src_TDES _tests)
