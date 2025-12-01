@@ -9,9 +9,13 @@ class TDES
 {
 public:
 	TDES();
-	std::string Encrypt(std::string plainText, std::string key);
-	std::string Decrypt(std::string cipherText, std::string key);
-	std::array<uint8_t, 64> Test(std::array<uint8_t,64> str);
+
+	std::string EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3);
+	std::string EncryptBlock(std::string plainText, std::string key1, std::string key2);
+
+	std::string DecryptBlock(std::string cipherText, std::string key1, std::string key2, std::string key3);
+	std::string DecryptBlock(std::string cipherText, std::string key1, std::string key2);
+
 
 	template <std::size_t N>
 	std::array<uint8_t, N> HexStringToBitArray(const std::string& hexStr);
@@ -21,7 +25,11 @@ public:
 	std::array<uint8_t, N> StringToBitArray(const std::string& str);
 	template <std::size_t N>
 	std::string BitArrayToString(const std::array<uint8_t, N>& bits);
-public:
+
+private:
+	std::string OneKeyEncryptBlock(std::string plainText, std::string key);
+	std::string OneKeyDecryptBlock(std::string cipherText, std::string key);
+
 	static const std::array<std::uint8_t,64> initialPermutation;
 	static const std::array<std::uint8_t,48> expansionD;
 	static const std::array<std::uint8_t,32> straightPermutation;

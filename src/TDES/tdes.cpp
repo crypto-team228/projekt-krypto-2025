@@ -4,7 +4,33 @@ TDES::TDES() {
 
 }
 
-std::string TDES::Encrypt(std::string plainText, std::string key) {
+
+
+std::string TDES::EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3) {
+	std::string result = OneKeyEncryptBlock(plainText, key1);
+	result = OneKeyDecryptBlock(result, key2);
+	result = OneKeyEncryptBlock(result, key3);
+	return result;
+}
+
+std::string TDES::EncryptBlock(std::string plainText, std::string key1, std::string key2) {
+	return EncryptBlock(plainText, key1, key2, key1);
+}
+
+std::string TDES::DecryptBlock(std::string cipherText, std::string key1, std::string key2, std::string key3) {
+	std::string result = OneKeyDecryptBlock(cipherText, key3);
+	result = OneKeyEncryptBlock(result, key2);
+	result = OneKeyDecryptBlock(result, key1);
+	return result;
+
+}
+
+std::string TDES::DecryptBlock(std::string cipherText, std::string key1, std::string key2) {
+	return EncryptBlock(cipherText, key1, key2, key1);
+}
+
+
+std::string TDES::OneKeyEncryptBlock(std::string plainText, std::string key) {
 	std::array<uint8_t, 64> bitPlainText = HexStringToBitArray<64>(plainText);
 	std::array<uint8_t, 64> bitKey = HexStringToBitArray<64>(key);
 	std::array<std::array<uint8_t, 48>, 16> subkeys = GenerateSubkeys(bitKey);
@@ -13,20 +39,14 @@ std::string TDES::Encrypt(std::string plainText, std::string key) {
 	return cipherText;
 }
 
-std::string TDES::Decrypt(std::string ciphrtText, std::string key) {
-	std::array<uint8_t, 64> bitCipherText = StringToBitArray<64>(ciphrtText);
+std::string TDES::OneKeyDecryptBlock(std::string ciphreText, std::string key) {
+	std::array<uint8_t, 64> bitCipherText = StringToBitArray<64>(ciphreText);
 	std::array<uint8_t, 64> bitKey = HexStringToBitArray<64>(key);
 	std::array<std::array<uint8_t, 48>, 16> subkeys = GenerateSubkeys(bitKey);
 	std::reverse(subkeys.begin(), subkeys.end());
 	std::array<uint8_t, 64> decryptedBlock = DESEncryptBlock(bitCipherText, subkeys);
 	std::string plainText = BitArrayToHexString(decryptedBlock);
 	return plainText;
-}
-
-std::array<uint8_t, 64> TDES::Test(std::array<uint8_t,64> str) {
-    std::array<uint8_t, 64> result{};
-    result = Permute(initialPermutation,str);
-    return result;
 }
 
 std::array<uint8_t, 32> TDES::FeistelFunction(std::array<uint8_t,32> right, std::array<uint8_t, 48> subkey)
@@ -102,8 +122,6 @@ std::array<uint8_t, 64> TDES::DESEncryptBlock(std::array<uint8_t, 64> block, std
 	std::array<uint8_t, 64> result{};
 	std::array<uint8_t, 64> permutedBlock = Permute(initialPermutation, block);
 
-	std::cout << "Permuted Block: " + BitArrayToHexString(permutedBlock) << std::endl;
-
 	std::array<uint8_t, 32> left{};
 	std::array<uint8_t, 32> right{};
 	for (std::size_t i = 0; i < 32; i++) {
@@ -124,7 +142,6 @@ std::array<uint8_t, 64> TDES::DESEncryptBlock(std::array<uint8_t, 64> block, std
 
 		}
 
-		std::cout << "After round " << round + 1 << ": L=" << BitArrayToHexString(left) << " R=" << BitArrayToHexString(right) << " K="<<BitArrayToHexString(subkeys[round]) << std::endl;
 	}
 	// Combine halves
 	std::array<uint8_t, 64> combinedBlock{};
