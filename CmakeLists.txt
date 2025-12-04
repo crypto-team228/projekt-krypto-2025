@@ -14,3 +14,9 @@ target_link_libraries(AES_app PRIVATE src AES TDES tests)
 
 add_executable(TDES_app src/TDES_main.cpp)
 target_link_libraries(TDES_app PRIVATE src AES TDES tests)
+
+add_executable(AES_test tests/test_aes.cpp)
+target_link_libraries(AES_test PRIVATE src AES TDES tests)
+
+add_executable(TDES_test tests/test_tdes.cpp)
+target_link_libraries(TDES_test PRIVATE src AES TDES tests)

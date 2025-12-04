@@ -5,10 +5,18 @@ excluded = {"out", "build"}
 PROJECT_NAME = "project-krypto"
 MAIN_EXECUTABLE = "crypto_app"
 MAIN_SOURCE = os.path.join("src", "AES_main.cpp")
+
 TDES_EXECUTABLE = "TDES_app"
 TDES_SOURCE = os.path.join("src", "TDES_main.cpp")
+TDES_TEST_EXECUTABLE = "TDES_test"
+TDES_TEST = os.path.join("tests", "test_tdes.cpp")
+
 AES_EXECUTABLE = "AES_app"
 AES_SOURCE = os.path.join("src", "AES_main.cpp")
+AES_TEST_EXECUTABLE = "AES_test"
+AES_TEST = os.path.join("tests", "test_aes.cpp")
+
+
 
 
 def generate_module_cmake(module_name, src_files):
@@ -61,7 +69,23 @@ def generate_root_cmake(modules):
     cmake += f"target_link_libraries({TDES_EXECUTABLE} PRIVATE "
     cmake += " ".join([m for m, _, _ in modules])
     cmake += ")\n"
+        
+    # --- Tests
+    #AES
+    cmake += f"\nadd_executable({AES_TEST_EXECUTABLE} {AES_TEST.replace(os.sep, '/')})\n"
+    cmake += f"target_link_libraries({AES_TEST_EXECUTABLE} PRIVATE "
+    cmake += " ".join([m for m, _, _ in modules])
+    cmake += ")\n"
+
+    #TDES
+    cmake += f"\nadd_executable({TDES_TEST_EXECUTABLE} {TDES_TEST.replace(os.sep, '/')})\n"
+    cmake += f"target_link_libraries({TDES_TEST_EXECUTABLE} PRIVATE "
+    cmake += " ".join([m for m, _, _ in modules])
+    cmake += ")\n"
+
+
     return cmake
+
 
 if __name__ == "__main__":
     root = "."
