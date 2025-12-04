@@ -1,5 +1,5 @@
-add_library(_src_TDES
+add_library(TDES
     tdes.cpp
     tdes_tables.cpp
 )
-target_include_directories(_src_TDES PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(TDES PUBLIC ${CMAKE_SOURCE_DIR}/include)

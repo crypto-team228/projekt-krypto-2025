@@ -1,4 +1,4 @@
-add_library(_src_AES
+add_library(AES
     aes.cpp
 )
-target_include_directories(_src_AES PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(AES PUBLIC ${CMAKE_SOURCE_DIR}/include)
