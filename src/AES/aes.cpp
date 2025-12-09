@@ -1,4 +1,5 @@
 #include "AES/aes.hpp"
+#include <vector>
 
 
 
@@ -117,6 +118,15 @@ void EncodeAES::encryptBlock(State &state) const
     addRoundKey(state, roundKeys[10]);
 }
 
+void EncodeAES::encryptBlocks(std::vector<AES::State> &blocks) const
+{
+    for (auto& block : blocks)
+    {
+        encryptBlock(block);
+    }
+};
+
+
 // --- EncodeAES forward operations ---
 void EncodeAES::subBytes(State &st) const
 {
@@ -197,6 +207,14 @@ void DecodeAES::decryptBlock(State &state) const
     invShiftRows(state);
     invSubBytes(state);
     addRoundKey(state, roundKeys[0]);
+}
+
+void DecodeAES::decryptBlocks(std::vector<AES::State> &blocks) const
+{
+    for (auto& block : blocks)
+    {
+        decryptBlock(block);
+    }
 }
 
 // GF(2^8) multiply by arbitrary constant (for invMixColumns)

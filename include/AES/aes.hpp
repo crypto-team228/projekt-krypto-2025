@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 
 // ######################################################## BASE AES ########################################################
@@ -67,12 +68,15 @@ public:
     // Encrypt 16-byte block (ECB mode)
     void encryptBlock(State &state) const;
 
+    void encryptBlocks(std::vector<AES::State> &blocks) const;
+
     // --- AES forward operations ---
     void subBytes(State &st) const;
 
     void shiftRows(State &st) const;
 
     void mixColumns(State &st) const;
+
 };
 
 
@@ -86,6 +90,7 @@ public:
 
     // Decrypt 16-byte block (ECB mode)
     void decryptBlock(State &state) const;
+    void decryptBlocks(std::vector<AES::State> &blocks) const;
 
     // --- Inverse S-box ---
     static constexpr uint8_t inv_sbox[256] = {
