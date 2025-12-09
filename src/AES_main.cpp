@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
-#include "AES\aes.hpp"
+
+#include "AES/aes.hpp"
+
 
 void printBlock(const AES::State &st, const std::string &label = "")
 {
@@ -30,11 +32,13 @@ int main()
 
     printBlock(block, "Plaintext block");
 
-    aes.encryptBlock(block);
+    EncodeAES encodeAes(key);
+    encodeAes.encryptBlock(block);
 
     printBlock(block, "Ciphertext block");
-
-    aes.decryptBlock(block);
+    
+    DecodeAES decodeAes(key);
+    decodeAes.decryptBlock(block);
 
     printBlock(block, "Decrypted block");
 

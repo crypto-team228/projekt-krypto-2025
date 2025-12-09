@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include "AES\aes.hpp"
+#include "AES/aes.hpp"
 
 // Test result tracking
 int tests_passed = 0;
@@ -62,11 +62,12 @@ void testNISTVector1()
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
     AES::State result = plaintext;
 
     // Test encryption
-    aes.encryptBlock(result);
+    encodeAes.encryptBlock(result);
     std::cout << "Plaintext:  ";
     printState(plaintext);
     std::cout << "\nCiphertext: ";
@@ -79,7 +80,7 @@ void testNISTVector1()
     runTest("NIST C.1 Encryption", encrypt_pass);
 
     // Test decryption
-    aes.decryptBlock(result);
+    decodeAes.decryptBlock(result);
     bool decrypt_pass = compareStates(result, plaintext);
     runTest("NIST C.1 Decryption", decrypt_pass);
 }
@@ -96,14 +97,15 @@ void testAllZeros()
         0x66, 0xe9, 0x4b, 0xd4, 0xef, 0x8a, 0x2c, 0x3b,
         0x88, 0x4c, 0xfa, 0x59, 0xca, 0x34, 0x2b, 0x2e};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
     AES::State result = plaintext;
 
-    aes.encryptBlock(result);
+    encodeAes.encryptBlock(result);
     bool encrypt_pass = compareStates(result, expected_ciphertext);
     runTest("All Zeros Encryption", encrypt_pass);
 
-    aes.decryptBlock(result);
+    decodeAes.decryptBlock(result);
     bool decrypt_pass = compareStates(result, plaintext);
     runTest("All Zeros Decryption", decrypt_pass);
 }
@@ -125,14 +127,15 @@ void testNISTSP800()
         0x3a, 0xd7, 0x7b, 0xb4, 0x0d, 0x7a, 0x36, 0x60,
         0xa8, 0x9e, 0xca, 0xf3, 0x24, 0x66, 0xef, 0x97};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
     AES::State result = plaintext;
 
-    aes.encryptBlock(result);
+    encodeAes.encryptBlock(result);
     bool encrypt_pass = compareStates(result, expected_ciphertext);
     runTest("NIST SP 800-38A Encryption", encrypt_pass);
 
-    aes.decryptBlock(result);
+    decodeAes.decryptBlock(result);
     bool decrypt_pass = compareStates(result, plaintext);
     runTest("NIST SP 800-38A Decryption", decrypt_pass);
 }
@@ -148,16 +151,17 @@ void testAllOnes()
     AES::State plaintext;
     plaintext.fill(0xFF);
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
     AES::State encrypted = plaintext;
-    aes.encryptBlock(encrypted);
+    encodeAes.encryptBlock(encrypted);
 
     // Check that encryption changed the data
     bool changed = !compareStates(encrypted, plaintext);
     runTest("All 0xFF changes on encryption", changed);
 
     // Test roundtrip
-    aes.decryptBlock(encrypted);
+    decodeAes.decryptBlock(encrypted);
     bool roundtrip = compareStates(encrypted, plaintext);
     runTest("All 0xFF roundtrip", roundtrip);
 }
@@ -171,7 +175,8 @@ void testMultipleBlocks()
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
 
     // Test 3 different blocks
     std::vector<AES::State> blocks = {
@@ -188,8 +193,8 @@ void testMultipleBlocks()
         AES::State original = blocks[i];
         AES::State encrypted = original;
 
-        aes.encryptBlock(encrypted);
-        aes.decryptBlock(encrypted);
+        encodeAes.encryptBlock(encrypted);
+        decodeAes.decryptBlock(encrypted);
 
         if (!compareStates(encrypted, original))
         {
@@ -218,14 +223,14 @@ void testDifferentKeys()
         0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00};
 
-    AES aes1(key1);
-    AES aes2(key2);
+    EncodeAES encodeAes1(key1);
+    EncodeAES encodeAes2(key2);
 
     AES::State cipher1 = plaintext;
     AES::State cipher2 = plaintext;
 
-    aes1.encryptBlock(cipher1);
-    aes2.encryptBlock(cipher2);
+    encodeAes1.encryptBlock(cipher1);
+    encodeAes2.encryptBlock(cipher2);
 
     bool different = !compareStates(cipher1, cipher2);
     runTest("Different keys produce different ciphertexts", different);
@@ -240,7 +245,7 @@ void testAvalancheEffect()
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
 
     AES::State plaintext1 = {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
@@ -252,8 +257,8 @@ void testAvalancheEffect()
     AES::State cipher1 = plaintext1;
     AES::State cipher2 = plaintext2;
 
-    aes.encryptBlock(cipher1);
-    aes.encryptBlock(cipher2);
+    encodeAes.encryptBlock(cipher1);
+    encodeAes.encryptBlock(cipher2);
 
     // Count different bits
     int diff_bits = 0;
@@ -281,7 +286,8 @@ void testInverseProperty()
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    AES aes(key);
+    EncodeAES encodeAes(key);
+    DecodeAES decodeAes(key);
     bool all_passed = true;
 
     for (int test = 0; test < 100; test++)
@@ -293,8 +299,8 @@ void testInverseProperty()
         }
 
         AES::State working = original;
-        aes.encryptBlock(working);
-        aes.decryptBlock(working);
+        encodeAes.encryptBlock(working);
+        decodeAes.decryptBlock(working);
 
         if (!compareStates(working, original))
         {
