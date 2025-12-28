@@ -1,17 +1,45 @@
 #include <iostream>
 #include <iomanip>
-#include <string>
 #include <vector>
+#include <array>
 #include "AES/aes.hpp"
 
-// Test result tracking
-int tests_passed = 0;
-int tests_failed = 0;
+// Test counters
+static int tests_passed = 0;
+static int tests_failed = 0;
 
-// Helper to compare two states
-bool compareStates(const AES::State &a, const AES::State &b)
+void runTest(const std::string &test_name, bool passed)
 {
-    for (int i = 0; i < 16; i++)
+    if (passed)
+    {
+        std::cout << "✓ " << test_name << " PASSED\n";
+        tests_passed++;
+    }
+    else
+    {
+        std::cout << "✗ " << test_name << " FAILED\n";
+        tests_failed++;
+    }
+}
+
+void printBytes(const std::vector<uint8_t> &data)
+{
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)data[i];
+        if ((i + 1) % 16 == 0)
+            std::cout << "\n";
+        else
+            std::cout << " ";
+    }
+    std::cout << std::dec << "\n";
+}
+
+bool compareBytes(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b)
+{
+    if (a.size() != b.size())
+        return false;
+    for (size_t i = 0; i < a.size(); i++)
     {
         if (a[i] != b[i])
             return false;
@@ -19,69 +47,43 @@ bool compareStates(const AES::State &a, const AES::State &b)
     return true;
 }
 
-// Helper to print a state
-void printState(const AES::State &st)
-{
-    for (int i = 0; i < 16; i++)
-    {
-        std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)st[i];
-        if (i < 15)
-            std::cout << " ";
-    }
-}
-
-// Test helper
-void runTest(const std::string &name, bool passed)
-{
-    if (passed)
-    {
-        std::cout << "✓ " << name << " PASSED\n";
-        tests_passed++;
-    }
-    else
-    {
-        std::cout << "✗ " << name << " FAILED\n";
-        tests_failed++;
-    }
-}
-
-// NIST Test Vector 1 - FIPS 197 Appendix C.1
+// NIST Test Vector 1 - From NIST FIPS 197, Appendix C.1
 void testNISTVector1()
 {
-    std::cout << "\n=== NIST FIPS 197 Appendix C.1 Test ===\n";
+    std::cout << "\n=== NIST C.1 Test Vector ===\n";
 
-    AES::Key128 key = {
+    std::vector<uint8_t> key = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    AES::State plaintext = {
+    std::vector<uint8_t> plaintext = {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
-    AES::State expected_ciphertext = {
+    std::vector<uint8_t> expected_ciphertext = {
         0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
         0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a};
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
-    AES::State result = plaintext;
+    AES aes;
+    aes.setKey(key);
+
+    std::vector<uint8_t> result = plaintext;
 
     // Test encryption
-    encodeAes.encryptBlock(result);
+    aes.encrypt(result);
     std::cout << "Plaintext:  ";
-    printState(plaintext);
-    std::cout << "\nCiphertext: ";
-    printState(result);
-    std::cout << "\nExpected:   ";
-    printState(expected_ciphertext);
-    std::cout << "\n";
+    printBytes(plaintext);
+    std::cout << "Ciphertext: ";
+    printBytes(result);
+    std::cout << "Expected:   ";
+    printBytes(expected_ciphertext);
 
-    bool encrypt_pass = compareStates(result, expected_ciphertext);
+    bool encrypt_pass = compareBytes(result, expected_ciphertext);
     runTest("NIST C.1 Encryption", encrypt_pass);
 
     // Test decryption
-    decodeAes.decryptBlock(result);
-    bool decrypt_pass = compareStates(result, plaintext);
+    aes.decrypt(result);
+    bool decrypt_pass = compareBytes(result, plaintext);
     runTest("NIST C.1 Decryption", decrypt_pass);
 }
 
@@ -90,23 +92,23 @@ void testAllZeros()
 {
     std::cout << "\n=== All Zeros Test ===\n";
 
-    AES::Key128 key = {0};
-    AES::State plaintext = {0};
+    std::vector<uint8_t> key(16, 0);
+    std::vector<uint8_t> plaintext(16, 0);
 
-    AES::State expected_ciphertext = {
+    std::vector<uint8_t> expected_ciphertext = {
         0x66, 0xe9, 0x4b, 0xd4, 0xef, 0x8a, 0x2c, 0x3b,
         0x88, 0x4c, 0xfa, 0x59, 0xca, 0x34, 0x2b, 0x2e};
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
-    AES::State result = plaintext;
+    AES aes;
+    aes.setKey(key);
 
-    encodeAes.encryptBlock(result);
-    bool encrypt_pass = compareStates(result, expected_ciphertext);
+    std::vector<uint8_t> result = plaintext;
+    aes.encrypt(result);
+    bool encrypt_pass = compareBytes(result, expected_ciphertext);
     runTest("All Zeros Encryption", encrypt_pass);
 
-    decodeAes.decryptBlock(result);
-    bool decrypt_pass = compareStates(result, plaintext);
+    aes.decrypt(result);
+    bool decrypt_pass = compareBytes(result, plaintext);
     runTest("All Zeros Decryption", decrypt_pass);
 }
 
@@ -115,28 +117,28 @@ void testNISTSP800()
 {
     std::cout << "\n=== NIST SP 800-38A Test ===\n";
 
-    AES::Key128 key = {
+    std::vector<uint8_t> key = {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
 
-    AES::State plaintext = {
+    std::vector<uint8_t> plaintext = {
         0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96,
         0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
 
-    AES::State expected_ciphertext = {
+    std::vector<uint8_t> expected_ciphertext = {
         0x3a, 0xd7, 0x7b, 0xb4, 0x0d, 0x7a, 0x36, 0x60,
         0xa8, 0x9e, 0xca, 0xf3, 0x24, 0x66, 0xef, 0x97};
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
-    AES::State result = plaintext;
+    AES aes;
+    aes.setKey(key);
 
-    encodeAes.encryptBlock(result);
-    bool encrypt_pass = compareStates(result, expected_ciphertext);
+    std::vector<uint8_t> result = plaintext;
+    aes.encrypt(result);
+    bool encrypt_pass = compareBytes(result, expected_ciphertext);
     runTest("NIST SP 800-38A Encryption", encrypt_pass);
 
-    decodeAes.decryptBlock(result);
-    bool decrypt_pass = compareStates(result, plaintext);
+    aes.decrypt(result);
+    bool decrypt_pass = compareBytes(result, plaintext);
     runTest("NIST SP 800-38A Decryption", decrypt_pass);
 }
 
@@ -145,24 +147,22 @@ void testAllOnes()
 {
     std::cout << "\n=== All Ones (0xFF) Test ===\n";
 
-    AES::Key128 key;
-    key.fill(0xFF);
+    std::vector<uint8_t> key(16, 0xFF);
+    std::vector<uint8_t> plaintext(16, 0xFF);
 
-    AES::State plaintext;
-    plaintext.fill(0xFF);
+    AES aes;
+    aes.setKey(key);
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
-    AES::State encrypted = plaintext;
-    encodeAes.encryptBlock(encrypted);
+    std::vector<uint8_t> encrypted = plaintext;
+    aes.encrypt(encrypted);
 
     // Check that encryption changed the data
-    bool changed = !compareStates(encrypted, plaintext);
+    bool changed = !compareBytes(encrypted, plaintext);
     runTest("All 0xFF changes on encryption", changed);
 
     // Test roundtrip
-    decodeAes.decryptBlock(encrypted);
-    bool roundtrip = compareStates(encrypted, plaintext);
+    aes.decrypt(encrypted);
+    bool roundtrip = compareBytes(encrypted, plaintext);
     runTest("All 0xFF roundtrip", roundtrip);
 }
 
@@ -171,39 +171,29 @@ void testMultipleBlocks()
 {
     std::cout << "\n=== Multiple Blocks Test ===\n";
 
-    AES::Key128 key = {
+    std::vector<uint8_t> key = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
+    AES aes;
+    aes.setKey(key);
 
-    // Test 3 different blocks
-    std::vector<AES::State> blocks = {
-        {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff},
-        {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
-         0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10},
-        {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11,
-         0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99}};
+    // Test 3 blocks (48 bytes)
+    std::vector<uint8_t> data = {
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11,
+        0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
 
-    bool all_passed = true;
-    for (size_t i = 0; i < blocks.size(); i++)
-    {
-        AES::State original = blocks[i];
-        AES::State encrypted = original;
+    std::vector<uint8_t> original = data;
 
-        encodeAes.encryptBlock(encrypted);
-        decodeAes.decryptBlock(encrypted);
+    aes.encrypt(data);
+    aes.decrypt(data);
 
-        if (!compareStates(encrypted, original))
-        {
-            all_passed = false;
-            std::cout << "  Block " << i << " failed roundtrip\n";
-        }
-    }
-
-    runTest("Multiple blocks roundtrip", all_passed);
+    bool roundtrip = compareBytes(data, original);
+    runTest("Multiple blocks roundtrip", roundtrip);
 }
 
 // Test that different keys produce different ciphertexts
@@ -211,28 +201,29 @@ void testDifferentKeys()
 {
     std::cout << "\n=== Different Keys Test ===\n";
 
-    AES::State plaintext = {
+    std::vector<uint8_t> plaintext = {
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
-    AES::Key128 key1 = {
+    std::vector<uint8_t> key1 = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    AES::Key128 key2 = {
+    std::vector<uint8_t> key2 = {
         0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00};
 
-    EncodeAES encodeAes1(key1);
-    EncodeAES encodeAes2(key2);
+    AES aes1, aes2;
+    aes1.setKey(key1);
+    aes2.setKey(key2);
 
-    AES::State cipher1 = plaintext;
-    AES::State cipher2 = plaintext;
+    std::vector<uint8_t> cipher1 = plaintext;
+    std::vector<uint8_t> cipher2 = plaintext;
 
-    encodeAes1.encryptBlock(cipher1);
-    encodeAes2.encryptBlock(cipher2);
+    aes1.encrypt(cipher1);
+    aes2.encrypt(cipher2);
 
-    bool different = !compareStates(cipher1, cipher2);
+    bool different = !compareBytes(cipher1, cipher2);
     runTest("Different keys produce different ciphertexts", different);
 }
 
@@ -241,28 +232,29 @@ void testAvalancheEffect()
 {
     std::cout << "\n=== Avalanche Effect Test ===\n";
 
-    AES::Key128 key = {
+    std::vector<uint8_t> key = {
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
         0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
 
-    EncodeAES encodeAes(key);
+    AES aes;
+    aes.setKey(key);
 
-    AES::State plaintext1 = {
+    std::vector<uint8_t> plaintext1 = {
         0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
         0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34};
 
-    AES::State plaintext2 = plaintext1;
+    std::vector<uint8_t> plaintext2 = plaintext1;
     plaintext2[0] ^= 0x01; // Flip one bit
 
-    AES::State cipher1 = plaintext1;
-    AES::State cipher2 = plaintext2;
+    std::vector<uint8_t> cipher1 = plaintext1;
+    std::vector<uint8_t> cipher2 = plaintext2;
 
-    encodeAes.encryptBlock(cipher1);
-    encodeAes.encryptBlock(cipher2);
+    aes.encrypt(cipher1);
+    aes.encrypt(cipher2);
 
     // Count different bits
     int diff_bits = 0;
-    for (int i = 0; i < 16; i++)
+    for (size_t i = 0; i < 16; i++)
     {
         uint8_t xor_val = cipher1[i] ^ cipher2[i];
         for (int bit = 0; bit < 8; bit++)
@@ -282,27 +274,27 @@ void testInverseProperty()
 {
     std::cout << "\n=== Inverse Property Test ===\n";
 
-    AES::Key128 key = {
+    std::vector<uint8_t> key = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
-    EncodeAES encodeAes(key);
-    DecodeAES decodeAes(key);
+    AES aes;
+    aes.setKey(key);
     bool all_passed = true;
 
     for (int test = 0; test < 100; test++)
     {
-        AES::State original;
+        std::vector<uint8_t> original(16);
         for (int i = 0; i < 16; i++)
         {
             original[i] = (uint8_t)((test * 17 + i * 13) & 0xFF);
         }
 
-        AES::State working = original;
-        encodeAes.encryptBlock(working);
-        decodeAes.decryptBlock(working);
+        std::vector<uint8_t> working = original;
+        aes.encrypt(working);
+        aes.decrypt(working);
 
-        if (!compareStates(working, original))
+        if (!compareBytes(working, original))
         {
             all_passed = false;
             std::cout << "  Failed on test pattern " << test << "\n";
@@ -311,6 +303,44 @@ void testInverseProperty()
     }
 
     runTest("100 roundtrip tests", all_passed);
+}
+
+// Test setKey can change the key
+void testKeyChange()
+{
+    std::cout << "\n=== Key Change Test ===\n";
+
+    std::vector<uint8_t> plaintext = {
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
+
+    std::vector<uint8_t> key1 = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+
+    std::vector<uint8_t> key2 = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+
+    AES aes;
+    aes.setKey(key1);
+
+    std::vector<uint8_t> cipher1 = plaintext;
+    aes.encrypt(cipher1);
+
+    // Change key
+    aes.setKey(key2);
+
+    std::vector<uint8_t> cipher2 = plaintext;
+    aes.encrypt(cipher2);
+
+    bool different = !compareBytes(cipher1, cipher2);
+    runTest("setKey changes encryption result", different);
+
+    // Verify decryption works with new key
+    aes.decrypt(cipher2);
+    bool decrypt_works = compareBytes(cipher2, plaintext);
+    runTest("Decryption works after key change", decrypt_works);
 }
 
 int main()
@@ -327,6 +357,7 @@ int main()
     testDifferentKeys();
     testAvalancheEffect();
     testInverseProperty();
+    testKeyChange();
 
     std::cout << "\n========================================\n";
     std::cout << "              Test Summary              \n";
@@ -337,12 +368,12 @@ int main()
 
     if (tests_failed == 0)
     {
-        std::cout << "\nAll tests PASSED!\n";
+        std::cout << "\nAll tests PASSED! ✓\n";
         return 0;
     }
     else
     {
-        std::cout << "\nSome tests FAILED\n";
+        std::cout << "\nSome tests FAILED ✗\n";
         return 1;
     }
 }

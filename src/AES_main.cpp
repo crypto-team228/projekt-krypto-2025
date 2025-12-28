@@ -61,6 +61,28 @@ std::string fromBlocksToString(const std::vector<std::array<uint8_t, 16>> &block
     return result;
 };
 
+std::vector<uint8_t> blocksToBytes(const std::vector<std::array<uint8_t, 16>> &blocks)
+{
+    std::vector<uint8_t> result;
+    for (const auto &block : blocks)
+    {
+        result.insert(result.end(), block.begin(), block.end());
+    }
+    return result;
+}
+
+std::vector<std::array<uint8_t, 16>> bytesToBlocks(const std::vector<uint8_t> &bytes)
+{
+    std::vector<std::array<uint8_t, 16>> blocks;
+    for (size_t i = 0; i < bytes.size(); i += 16)
+    {
+        std::array<uint8_t, 16> block;
+        std::copy(bytes.begin() + i, bytes.begin() + i + 16, block.begin());
+        blocks.push_back(block);
+    }
+    return blocks;
+}
+
 void printBlock(const AES::State &st)
 {
     for (int i = 0; i < 16; i++)
@@ -77,11 +99,20 @@ int main()
     std::cout << "         AES Encryption/Decryption     \n";
     std::cout << "========================================\n\n";
 
-    std::string plaintext = "YES, I did it!!!";
+    std::cout << "Wprowadź tekst do zaszyfrowania (max 256 znaków): ";
+    std::string plaintext;
+    std::getline(std::cin, plaintext);
 
     std::string secret_key = "Awawqwer123!!90L"; // 16 bytes = 128 bits
 
     AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
+    std::cout << "Secret key in blocks\n";
+    for (int i = 0; i < 16; i++)
+    {
+        std::cout << std::hex << std::setfill('0')
+                  << std::setw(2) << (int)key[i] << " ";
+    }
+    std::cout << "\n";
 
     AES aes(key);
 
@@ -94,8 +125,9 @@ int main()
               << plaintext << "\n";
     std::cout << "\n";
 
-    EncodeAES encodeAes(key);
-    encodeAes.encryptBlocks(blocks);
+    std::vector<uint8_t> data = blocksToBytes(blocks);
+    aes.encrypt(data);
+    blocks = bytesToBlocks(data);
 
     std::cout << "Encrypted Blocks:\n";
     for (const auto &b : blocks)
@@ -106,8 +138,8 @@ int main()
     std::cout << "Encrypted Text: " << "\n"
               << encryptedText << "\n\n";
 
-    DecodeAES decodeAes(key);
-    decodeAes.decryptBlocks(blocks);
+    aes.decrypt(data);
+    blocks = bytesToBlocks(data);
     std::cout << "Decrypted Blocks:\n";
     for (const auto &b : blocks)
     {

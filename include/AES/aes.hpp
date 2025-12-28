@@ -4,15 +4,23 @@
 #include <iomanip>
 #include <vector>
 
+#include "algorithm.hpp"
 
-// ######################################################## BASE AES ########################################################
-
-
-class AES
+class AES : public Algorithm
 {
 public:
     using State = std::array<uint8_t, 16>;
     using Key128 = std::array<uint8_t, 16>;
+
+    AES(const Key128 &key);
+    AES() = default;
+
+    // Override Algorithm interface methods
+    void setKey(const std::vector<uint8_t> &key) override;
+    void encrypt(std::vector<uint8_t> &block) override;
+    void decrypt(std::vector<uint8_t> &block) override;
+
+private:
     using RoundKeys = std::array<State, 11>; // 11 round keys for AES-128
 
     // --- S-box ---
@@ -32,65 +40,7 @@ public:
         0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
         0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
-        0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    };    
-
-    RoundKeys roundKeys;
-
-    AES(const Key128 &key);
-
-    // GF(2^8) multiply by 2
-    static inline uint8_t xtime(uint8_t x);
-    
-    void addRoundKey(State &st, const State &key) const;
-
-    // --- Key expansion helper functions ---
-    static uint8_t Rcon(int i);
-
-    static void rotWord(uint8_t *w);
-
-    static void subWord(uint8_t *w);
-
-    // --- Key Expansion (AES-128) ---
-    void keyExpansion(const Key128 &key);
-
-};
-
-
-// ######################################################## ENCODE AES ########################################################
-
-
-class EncodeAES : public AES
-{
-public:
-    EncodeAES(const Key128 &key);
-
-    // Encrypt 16-byte block (ECB mode)
-    void encryptBlock(State &state) const;
-
-    void encryptBlocks(std::vector<AES::State> &blocks) const;
-
-    // --- AES forward operations ---
-    void subBytes(State &st) const;
-
-    void shiftRows(State &st) const;
-
-    void mixColumns(State &st) const;
-
-};
-
-
-// ######################################################## DECODE AES ########################################################
-
-
-class DecodeAES : public AES
-{
-public:
-    DecodeAES(const Key128 &key);  // Call base constructor
-
-    // Decrypt 16-byte block (ECB mode)
-    void decryptBlock(State &state) const;
-    void decryptBlocks(std::vector<AES::State> &blocks) const;
+        0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
 
     // --- Inverse S-box ---
     static constexpr uint8_t inv_sbox[256] = {
@@ -111,14 +61,31 @@ public:
         0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d};
 
-    // GF(2^8) multiply by arbitrary constant (for invMixColumns)
-    static uint8_t gmul(uint8_t a, uint8_t b);
+    RoundKeys roundKeys;
 
-    // --- AES inverse operations (for decryption) ---
+    // GF(2^8) multiply by 2
+    static inline uint8_t xtime(uint8_t x);
+
+    void addRoundKey(State &st, const State &key) const;
+
+    // --- Key expansion helper functions ---
+    static uint8_t Rcon(int i);
+    static void rotWord(uint8_t *w);
+    static void subWord(uint8_t *w);
+
+    // --- Key Expansion (AES-128) ---
+    void keyExpansion(const Key128 &key);
+
+    // --- Encryption operations ---
+    void encryptBlock(State &state) const;
+    void subBytes(State &st) const;
+    void shiftRows(State &st) const;
+    void mixColumns(State &st) const;
+
+    // --- Decryption operations ---
+    void decryptBlock(State &state) const;
     void invSubBytes(State &st) const;
-
     void invShiftRows(State &st) const;
-
     void invMixColumns(State &st) const;
-
+    static uint8_t gmul(uint8_t a, uint8_t b);
 };

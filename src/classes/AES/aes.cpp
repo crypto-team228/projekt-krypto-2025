@@ -1,14 +1,53 @@
 #include "AES/aes.hpp"
 #include <vector>
-
-
-
-// ######################################################## BASE AES ########################################################
-
+#include <stdexcept>
 
 AES::AES(const Key128 &key)
 {
     keyExpansion(key);
+}
+
+void AES::setKey(const std::vector<uint8_t> &key)
+{
+    if (key.size() != 16)
+    {
+        throw std::invalid_argument("AES key must be 16 bytes");
+    }
+    Key128 key128;
+    std::copy(key.begin(), key.end(), key128.begin());
+    keyExpansion(key128);
+}
+
+void AES::encrypt(std::vector<uint8_t> &block)
+{
+    if (block.size() % 16 != 0)
+    {
+        throw std::invalid_argument("Block size must be multiple of 16 bytes");
+    }
+
+    for (size_t i = 0; i < block.size(); i += 16)
+    {
+        State state;
+        std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
+        encryptBlock(state);
+        std::copy(state.begin(), state.end(), block.begin() + i);
+    }
+}
+
+void AES::decrypt(std::vector<uint8_t> &block)
+{
+    if (block.size() % 16 != 0)
+    {
+        throw std::invalid_argument("Block size must be multiple of 16 bytes");
+    }
+
+    for (size_t i = 0; i < block.size(); i += 16)
+    {
+        State state;
+        std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
+        decryptBlock(state);
+        std::copy(state.begin(), state.end(), block.begin() + i);
+    }
 }
 
 // GF(2^8) multiply by 2
@@ -49,7 +88,7 @@ void AES::subWord(uint8_t *w)
 }
 
 // --- Key Expansion (AES-128) ---
-void AES::keyExpansion(const Key128& key)
+void AES::keyExpansion(const Key128 &key)
 {
     uint8_t w[44][4];
 
@@ -93,14 +132,8 @@ void AES::keyExpansion(const Key128& key)
     }
 };
 
-
-// ##################################################### ENCODE AES ########################################################
-
-
-EncodeAES::EncodeAES(const Key128 &key) : AES(key) {}
-
 // Encrypt 16-byte block (ECB mode)
-void EncodeAES::encryptBlock(State &state) const
+void AES::encryptBlock(State &state) const
 {
     addRoundKey(state, roundKeys[0]);
 
@@ -118,23 +151,14 @@ void EncodeAES::encryptBlock(State &state) const
     addRoundKey(state, roundKeys[10]);
 }
 
-void EncodeAES::encryptBlocks(std::vector<AES::State> &blocks) const
-{
-    for (auto& block : blocks)
-    {
-        encryptBlock(block);
-    }
-};
-
-
-// --- EncodeAES forward operations ---
-void EncodeAES::subBytes(State &st) const
+// --- AES forward operations ---
+void AES::subBytes(State &st) const
 {
     for (auto &b : st)
         b = sbox[b];
 }
 
-void EncodeAES::shiftRows(State &st) const
+void AES::shiftRows(State &st) const
 {
     State tmp = st;
 
@@ -165,7 +189,7 @@ void EncodeAES::shiftRows(State &st) const
     st = tmp;
 }
 
-void EncodeAES::mixColumns(State &st) const
+void AES::mixColumns(State &st) const
 {
     for (int c = 0; c < 4; c++)
     {
@@ -179,17 +203,8 @@ void EncodeAES::mixColumns(State &st) const
     }
 }
 
-
-
-
-// ######################################################## DECODE AES ########################################################
-
-
-DecodeAES::DecodeAES(const Key128 &key) : AES(key) {}
-
-
 // Decrypt 16-byte block (ECB mode)
-void DecodeAES::decryptBlock(State &state) const
+void AES::decryptBlock(State &state) const
 {
     // Start with last round key
     addRoundKey(state, roundKeys[10]);
@@ -209,16 +224,8 @@ void DecodeAES::decryptBlock(State &state) const
     addRoundKey(state, roundKeys[0]);
 }
 
-void DecodeAES::decryptBlocks(std::vector<AES::State> &blocks) const
-{
-    for (auto& block : blocks)
-    {
-        decryptBlock(block);
-    }
-}
-
 // GF(2^8) multiply by arbitrary constant (for invMixColumns)
-uint8_t DecodeAES::gmul(uint8_t a, uint8_t b)
+uint8_t AES::gmul(uint8_t a, uint8_t b)
 {
     uint8_t result = 0;
     while (b)
@@ -232,13 +239,13 @@ uint8_t DecodeAES::gmul(uint8_t a, uint8_t b)
 }
 
 // --- AES inverse operations (for decryption) ---
-void DecodeAES::invSubBytes(State &st) const
+void AES::invSubBytes(State &st) const
 {
     for (auto &b : st)
         b = inv_sbox[b];
 }
 
-void DecodeAES::invShiftRows(State &st) const
+void AES::invShiftRows(State &st) const
 {
     State tmp = st;
 
@@ -269,7 +276,7 @@ void DecodeAES::invShiftRows(State &st) const
     st = tmp;
 }
 
-void DecodeAES::invMixColumns(State &st) const
+void AES::invMixColumns(State &st) const
 {
     for (int c = 0; c < 4; c++)
     {
@@ -282,4 +289,3 @@ void DecodeAES::invMixColumns(State &st) const
         st[i + 3] = gmul(a0, 11) ^ gmul(a1, 13) ^ gmul(a2, 9) ^ gmul(a3, 14);
     }
 }
-

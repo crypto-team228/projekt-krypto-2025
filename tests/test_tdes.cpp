@@ -2,9 +2,10 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include "TDES\tdes.hpp"
+#include "TDES/tdes.hpp"
 
-int main() {
+int main()
+{
 	TDES tdes;
 
 	std::string plaintext = "0123456789ABCDEF";
@@ -25,7 +26,6 @@ int main() {
 	std::cout << "Expected Text:  " << plaintext << std::endl;
 	std::cout << "\n\n";
 
-
 	plaintext = "FEDCBA9876543210";
 	key1 = "233457799BBCDFF1";
 	key2 = "133457799BBCDFF1";
@@ -43,7 +43,6 @@ int main() {
 	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
 	std::cout << "Expected Text:  " << plaintext << std::endl;
 	std::cout << "\n\n";
-
 
 	plaintext = "0123456789ABCDEF0123456789ABCDEF";
 	key1 = "033457799BBCDFF1";
@@ -63,7 +62,6 @@ int main() {
 	std::cout << "Expected Text:  " << plaintext << std::endl;
 	std::cout << "\n\n";
 
-
 	plaintext = "0123456789ABCDEF";
 	key1 = "033457799BBCDFF1";
 	key2 = "133457799BBCDFF1";
@@ -81,9 +79,6 @@ int main() {
 	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
 	std::cout << "Expected Text:  " << plaintext << std::endl;
 	std::cout << "\n\n";
-
-
-
 
 	return 0;
 }
