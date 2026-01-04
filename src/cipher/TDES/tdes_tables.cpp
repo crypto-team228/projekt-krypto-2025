@@ -1,4 +1,4 @@
-#include "TDES/tdes.hpp"
+#include "cipher/TDES/tdes.hpp"
 
 const std::array<std::uint8_t, 64> TDES::initialPermutation = { // starting from 0
 	57, 49, 41, 33, 25, 17, 9, 1,

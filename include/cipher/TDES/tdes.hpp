@@ -5,11 +5,15 @@
 #include <array>
 #include <iostream>
 #include <algorithm>
+#include <cipher/cipher.hpp>
 
-class TDES
+class TDES : public Cipher
 {
 public:
 	TDES();
+	std::string encryptBlock(const std::string& data, std::string key) override;
+	std::string decryptBlock(const std::string& data, std::string key) override;
+	std::array<uint8_t, 64> Test(std::array<uint8_t,64> str);
 
 	std::string EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3);
 	std::string EncryptBlock(std::string plainText, std::string key1, std::string key2);
@@ -35,7 +39,7 @@ private:
 	static const std::array<std::uint8_t, 32> straightPermutation;
 	static const std::array<std::uint8_t, 64> finalPermutation;
 	static const std::array<std::array<std::array<std::uint8_t, 16>, 4>, 8> sbox;
-
+	
 	static const std::array<std::uint8_t, 56> parityBitDropTable;
 	static const std::array<uint8_t, 28> keyShiftTable;
 	static const std::array<uint8_t, 48> keyCompressionTable;
@@ -49,4 +53,6 @@ private:
 
 	std::array<uint8_t, 64> DESEncryptBlock(std::array<uint8_t, 64> block, std::array<std::array<uint8_t, 48>, 16> subkeys);
 	std::array<uint8_t, 64> DESDecryptBlock(std::array<uint8_t, 64> block, std::array<std::array<uint8_t, 48>, 16> subkeys);
+
+
 };

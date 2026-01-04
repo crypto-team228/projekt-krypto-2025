@@ -1,6 +1,5 @@
 #include <iostream>
-#include "mylib.hpp"
-#include "TDES/tdes.hpp"
+#include "cipher/TDES/tdes.hpp"
 
 int main() {
 	TDES tdes = TDES();

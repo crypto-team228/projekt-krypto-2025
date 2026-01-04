@@ -1,6 +1,6 @@
 add_library(tests
     test_aes.cpp
-    test_tdes.cpp
     test_main.cpp
+    test_tdes.cpp
 )
-target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(tests PUBLIC ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)

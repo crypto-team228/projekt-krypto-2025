@@ -4,7 +4,7 @@
 #include <vector>
 #include <array>
 
-#include "AES/aes.hpp"
+#include "cipher/AES/aes.hpp"
 
 std::vector<std::array<uint8_t, 16>> split_to_128bit_blocks(const std::string &text)
 {
@@ -81,9 +81,9 @@ int main()
 
     std::string secret_key = "Awawqwer123!!90L"; // 16 bytes = 128 bits
 
-    AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
+    //AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
 
-    AES aes(key);
+    //AES aes(key);
 
     auto blocks = split_to_128bit_blocks(plaintext);
     for (const auto &b : blocks)
@@ -94,8 +94,8 @@ int main()
               << plaintext << "\n";
     std::cout << "\n";
 
-    EncodeAES encodeAes(key);
-    encodeAes.encryptBlocks(blocks);
+    //EncodeAES encodeAes(key);
+    //encodeAes.encryptBlocks(blocks);
 
     std::cout << "Encrypted Blocks:\n";
     for (const auto &b : blocks)
@@ -106,8 +106,8 @@ int main()
     std::cout << "Encrypted Text: " << "\n"
               << encryptedText << "\n\n";
 
-    DecodeAES decodeAes(key);
-    decodeAes.decryptBlocks(blocks);
+    //DecodeAES decodeAes(key);
+    //decodeAes.decryptBlocks(blocks);
     std::cout << "Decrypted Blocks:\n";
     for (const auto &b : blocks)
     {

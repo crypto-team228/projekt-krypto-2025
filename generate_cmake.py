@@ -1,10 +1,10 @@
 import os
 
-excluded = {"out", "build"}
+excluded = {"out", "build", "include", "external"           }
 
 PROJECT_NAME = "project-krypto"
-MAIN_EXECUTABLE = "crypto_app"
-MAIN_SOURCE = os.path.join("src", "AES_main.cpp")
+MAIN_EXECUTABLE = "crypto_app_cli"
+MAIN_SOURCE = os.path.join("src","cli", "cli.cpp")
 
 TDES_EXECUTABLE = "TDES_app"
 TDES_SOURCE = os.path.join("src", "TDES_main.cpp")
@@ -24,9 +24,14 @@ def generate_module_cmake(module_name, src_files):
     for src in src_files:
         cmake += f"    {src.replace(os.sep, '/')}\n"
     cmake += ")\n"
-    cmake += f"target_include_directories({module_name} PUBLIC ${{CMAKE_SOURCE_DIR}}/include)\n"
+    cmake += f"target_include_directories({module_name} PUBLIC ${{CMAKE_SOURCE_DIR}}/include ${{CMAKE_SOURCE_DIR}}/external)\n"
 
     return cmake
+
+def make_unique_module_name(dirpath):
+    rel = os.path.relpath(dirpath, ".")
+    rel = rel.replace(os.sep, "_")
+    return rel
 
 def walk_project(root_dir):
     modules = []
@@ -38,7 +43,7 @@ def walk_project(root_dir):
 
         src_files = [f for f in filenames if f.endswith(".cpp")]
         if src_files:
-            module_name = os.path.basename(dirpath)
+            module_name = make_unique_module_name(dirpath)
             modules.append((module_name, dirpath, src_files))
             cmake_path = os.path.join(dirpath, "CMakeLists.txt")
             with open(cmake_path, "w") as f:

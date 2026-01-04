@@ -1,10 +1,18 @@
-#include "TDES/tdes.hpp"
+#include "cipher/TDES/tdes.hpp"
 
 TDES::TDES() {
 
 }
 
+std::string TDES::encryptBlock(const std::string& data, std::string key) {
 
+	return "";
+}
+
+std::string TDES::decryptBlock(const std::string & data, std::string key) {
+	
+	return "";
+}
 
 std::string TDES::EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3) {
 	std::string result = OneKeyEncryptBlock(plainText, key1);

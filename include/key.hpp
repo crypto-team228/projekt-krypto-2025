@@ -1,3 +1,7 @@
+#pragma once
+#include <vector>
+#include <string>
+
 struct Key {
 	std::vector<uint8_t> data;
 	std::string encoding;

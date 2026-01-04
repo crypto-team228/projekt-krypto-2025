@@ -1,12 +1,11 @@
-
+#pragma once
+#include <string>
 
 class Cipher {
 public:
-	virtual ~BaseCipher() = default;
+	virtual ~Cipher() = default;
 
-	// Encrypt the input data
-	virtual std::string encryptBlock(const std::string& data) = 0;
-	
-	// Decrypt the input data
-	virtual std::string decryptBlock(const std::string& data) = 0;
-}
+	virtual std::string encryptBlock(const std::string& data, std::string key) = 0;
+
+	virtual std::string decryptBlock(const std::string& data, std::string key) = 0;
+};
