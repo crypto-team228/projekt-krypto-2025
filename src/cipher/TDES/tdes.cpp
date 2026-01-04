@@ -11,6 +11,10 @@ void TDES::encryptBlock(const uint8_t* in, uint8_t* out) const {
 void TDES::decryptBlock(const uint8_t* in, uint8_t* out) const {
 	
 }
+void TDES::setKey(const std::vector<uint8_t>& key) {
+
+
+}
 
 std::string TDES::EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3) {
 	std::string result = OneKeyEncryptBlock(plainText, key1);

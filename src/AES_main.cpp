@@ -126,7 +126,7 @@ int main()
     std::cout << "\n";
 
     std::vector<uint8_t> data = blocksToBytes(blocks);
-    aes.encryptBlock(data);
+    aes.encryptBlock(data.data(), data.data());
     blocks = bytesToBlocks(data);
 
     std::cout << "Encrypted Blocks:\n";
@@ -138,7 +138,7 @@ int main()
     std::cout << "Encrypted Text: " << "\n"
               << encryptedText << "\n\n";
 
-    aes.decryptBlock(data);
+    aes.decryptBlock(data.data(), data.data());
     blocks = bytesToBlocks(data);
     std::cout << "Decrypted Blocks:\n";
     for (const auto &b : blocks)
