@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     auto iv_bytes = iv.empty() ? std::vector<uint8_t>() : decode(iv, "hex");
 
     // --- Wywo³anie Twojej funkcji szyfruj¹cej ---
-    // ModeFactory::create(mode)->encrypt(plaintext_bytes, key_bytes, iv_bytes);
+    // ModeFactory::create(mode)->encryptBlock(plaintext_bytes, key_bytes, iv_bytes);
 
     std::cout << "CLI dzia³a poprawnie, dane znormalizowane." << std::endl;
 }

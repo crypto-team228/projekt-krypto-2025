@@ -11,8 +11,10 @@ class TDES : public Cipher
 {
 public:
 	TDES();
-	std::string encryptBlock(const std::string& data, std::string key) override;
-	std::string decryptBlock(const std::string& data, std::string key) override;
+	void encryptBlock(const uint8_t* in, uint8_t* out) const override;
+	void decryptBlock(const uint8_t* in, uint8_t* out) const override;
+	void setKey(const std::vector<uint8_t>& key) override;
+
 	std::array<uint8_t, 64> Test(std::array<uint8_t,64> str);
 
 	std::string EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3);

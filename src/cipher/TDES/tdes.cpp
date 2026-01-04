@@ -4,14 +4,12 @@ TDES::TDES() {
 
 }
 
-std::string TDES::encryptBlock(const std::string& data, std::string key) {
+void TDES::encryptBlock(const uint8_t* in, uint8_t* out) const {
 
-	return "";
 }
 
-std::string TDES::decryptBlock(const std::string & data, std::string key) {
+void TDES::decryptBlock(const uint8_t* in, uint8_t* out) const {
 	
-	return "";
 }
 
 std::string TDES::EncryptBlock(std::string plainText, std::string key1, std::string key2, std::string key3) {

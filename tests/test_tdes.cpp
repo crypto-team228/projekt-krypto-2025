@@ -2,9 +2,10 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include "cipher/TDES\tdes.hpp"
+#include "cipher/TDES/tdes.hpp"
 
-int main() {
+int main()
+{
 	TDES tdes;
 
 	std::string plaintext = "0123456789ABCDEF";
@@ -15,7 +16,15 @@ int main() {
 	std::string decryptedtext = tdes.DecryptBlock(ciphertext, key1, key2, key3);
 	std::string expectedEncrypted = "37d174403fc04f1a";
 
-
+	std::cout << "Plaintext: " << plaintext << std::endl;
+	std::cout << "Key: " << key1 + key2 + key3 << std::endl;
+	std::cout << "\n";
+	std::cout << "Encrypted Ciphertext: " << tdes.BitArrayToHexString(tdes.StringToBitArray<64>(ciphertext)) << std::endl;
+	std::cout << "Expected Ciphertext:  " << expectedEncrypted << std::endl;
+	std::cout << "\n";
+	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
+	std::cout << "Expected Text:  " << plaintext << std::endl;
+	std::cout << "\n\n";
 
 	plaintext = "FEDCBA9876543210";
 	key1 = "233457799BBCDFF1";
@@ -25,6 +34,15 @@ int main() {
 	decryptedtext = tdes.DecryptBlock(ciphertext, key1, key2, key3);
 	expectedEncrypted = "473eeb07b08f7d13";
 
+	std::cout << "Plaintext: " << plaintext << std::endl;
+	std::cout << "Key: " << key1 + key2 + key3 << std::endl;
+	std::cout << "\n";
+	std::cout << "Encrypted Ciphertext: " << tdes.BitArrayToHexString(tdes.StringToBitArray<64>(ciphertext)) << std::endl;
+	std::cout << "Expected Ciphertext:  " << expectedEncrypted << std::endl;
+	std::cout << "\n";
+	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
+	std::cout << "Expected Text:  " << plaintext << std::endl;
+	std::cout << "\n\n";
 
 	plaintext = "0123456789ABCDEF0123456789ABCDEF";
 	key1 = "033457799BBCDFF1";
@@ -34,6 +52,15 @@ int main() {
 	decryptedtext = tdes.DecryptBlock(ciphertext, key1, key2, key3);
 	expectedEncrypted = "37d174403fc04f1a37d174403fc04f1a";
 
+	std::cout << "Plaintext: " << plaintext << std::endl;
+	std::cout << "Key: " << key1 + key2 + key3 << std::endl;
+	std::cout << "\n";
+	std::cout << "Encrypted Ciphertext: " << tdes.BitArrayToHexString(tdes.StringToBitArray<64>(ciphertext)) << std::endl;
+	std::cout << "Expected Ciphertext:  " << expectedEncrypted << std::endl;
+	std::cout << "\n";
+	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
+	std::cout << "Expected Text:  " << plaintext << std::endl;
+	std::cout << "\n\n";
 
 	plaintext = "0123456789ABCDEF";
 	key1 = "033457799BBCDFF1";
@@ -43,6 +70,15 @@ int main() {
 	decryptedtext = tdes.DecryptBlock(ciphertext, key1, key2, key3);
 	expectedEncrypted = "none";
 
+	std::cout << "Plaintext: " << plaintext << std::endl;
+	std::cout << "Key: " << key1 + key2 + key3 << std::endl;
+	std::cout << "\n";
+	std::cout << "Encrypted Ciphertext: " << tdes.BitArrayToHexString(tdes.StringToBitArray<64>(ciphertext)) << std::endl;
+	std::cout << "Expected Ciphertext:  " << expectedEncrypted << std::endl;
+	std::cout << "\n";
+	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
+	std::cout << "Expected Text:  " << plaintext << std::endl;
+	std::cout << "\n\n";
 
 	return 0;
 }
