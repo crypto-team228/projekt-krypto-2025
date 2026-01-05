@@ -17,11 +17,18 @@ public:
 
     // Override Algorithm interface methods
     void setKey(const std::vector<uint8_t> &key) override;
+    void setMode(Mode mode) override;
     void encrypt(std::vector<uint8_t> &block) override;
     void decrypt(std::vector<uint8_t> &block) override;
 
+    // Set IV for CBC/CTR modes
+    void setIV(const std::vector<uint8_t> &iv);
+
 private:
     using RoundKeys = std::array<State, 11>; // 11 round keys for AES-128
+
+    Mode currentMode = Mode::ECB;
+    State iv = {0}; // Initialization vector for CBC/CTR modes
 
     // --- S-box ---
     static constexpr uint8_t sbox[256] = {

@@ -88,7 +88,7 @@ void printBlock(const AES::State &st)
     for (int i = 0; i < 16; i++)
     {
         std::cout << std::hex << std::setfill('0')
-                  << std::setw(2) << (int)st[i] << " ";
+                  << std::setw(2) << (int)st[i];
     }
     std::cout << "\n";
 };
@@ -99,24 +99,88 @@ int main()
     std::cout << "         AES Encryption/Decryption     \n";
     std::cout << "========================================\n\n";
 
-    std::cout << "Wprowadź tekst do zaszyfrowania (max 256 znaków): ";
+    // Wybór trybu szyfrowania
+    std::cout << "Wybierz tryb szyfrowania:\n";
+    std::cout << "1. ECB (Electronic Codebook)\n";
+    std::cout << "2. CBC (Cipher Block Chaining)\n";
+    std::cout << "3. CTR (Counter)\n";
+    std::cout << "Wybór: ";
+
+    int modeChoice;
+    std::cin >> modeChoice;
+    std::cin.ignore(); // Clear newline from buffer
+
+    Mode selectedMode;
+    switch (modeChoice)
+    {
+    case 1:
+        selectedMode = Mode::ECB;
+        std::cout << "Wybrany tryb: ECB\n\n";
+        break;
+    case 2:
+        selectedMode = Mode::CBC;
+        std::cout << "Wybrany tryb: CBC\n\n";
+        break;
+    case 3:
+        selectedMode = Mode::CTR;
+        std::cout << "Wybrany tryb: CTR\n\n";
+        break;
+    default:
+        std::cout << "Nieprawidłowy wybór. Ustawiam ECB.\n\n";
+        selectedMode = Mode::ECB;
+        break;
+    }
+
+    std::cout << "Wprowadź klucz szyfrowania (dokładnie 16 znaków): ";
+    std::string secret_key;
+    std::getline(std::cin, secret_key);
+
+    // Upewnij się, że klucz ma dokładnie 16 bajtów
+    if (secret_key.length() < 16)
+    {
+        secret_key.resize(16, '0'); // Wypełnij zerami
+        std::cout << "Uwaga: Klucz był za krótki, został uzupełniony do 16 znaków.\n";
+    }
+    else if (secret_key.length() > 16)
+    {
+        secret_key = secret_key.substr(0, 16); // Obetnij do 16 znaków
+        std::cout << "Uwaga: Klucz był za długi, został obcięty do 16 znaków.\n";
+    }
+
+    AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
+
+    AES aes(key);
+    aes.setMode(selectedMode);
+
+    // Dla trybów CBC i CTR ustaw IV
+    if (selectedMode == Mode::CBC || selectedMode == Mode::CTR)
+    {
+        std::cout << "Wprowadź wektor inicjalizujący IV (dokładnie 16 znaków): ";
+        std::string iv_string;
+        std::getline(std::cin, iv_string);
+
+        // Upewnij się, że IV ma dokładnie 16 bajtów
+        if (iv_string.length() < 16)
+        {
+            iv_string.resize(16, '0'); // Wypełnij zerami
+            std::cout << "Uwaga: IV był za krótki, został uzupełniony do 16 znaków.\n";
+        }
+        else if (iv_string.length() > 16)
+        {
+            iv_string = iv_string.substr(0, 16); // Obetnij do 16 znaków
+            std::cout << "Uwaga: IV był za długi, został obcięty do 16 znaków.\n";
+        }
+
+        std::vector<uint8_t> iv(iv_string.begin(), iv_string.end());
+        aes.setIV(iv);
+    }
+
+    std::cout << "\nWprowadź tekst do zaszyfrowania (max 256 znaków): ";
     std::string plaintext;
     std::getline(std::cin, plaintext);
 
-    std::string secret_key = "Awawqwer123!!90L"; // 16 bytes = 128 bits
-
-    AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
-    std::cout << "Secret key in blocks\n";
-    for (int i = 0; i < 16; i++)
-    {
-        std::cout << std::hex << std::setfill('0')
-                  << std::setw(2) << (int)key[i] << " ";
-    }
-    std::cout << "\n";
-
-    AES aes(key);
-
     auto blocks = split_to_128bit_blocks(plaintext);
+    std::cout << "\nOriginal Blocks:\n";
     for (const auto &b : blocks)
     {
         printBlock(b);

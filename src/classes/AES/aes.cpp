@@ -18,6 +18,20 @@ void AES::setKey(const std::vector<uint8_t> &key)
     keyExpansion(key128);
 }
 
+void AES::setMode(Mode mode)
+{
+    currentMode = mode;
+}
+
+void AES::setIV(const std::vector<uint8_t> &initVector)
+{
+    if (initVector.size() != 16)
+    {
+        throw std::invalid_argument("IV must be 16 bytes");
+    }
+    std::copy(initVector.begin(), initVector.end(), iv.begin());
+}
+
 void AES::encrypt(std::vector<uint8_t> &block)
 {
     if (block.size() % 16 != 0)
@@ -25,12 +39,58 @@ void AES::encrypt(std::vector<uint8_t> &block)
         throw std::invalid_argument("Block size must be multiple of 16 bytes");
     }
 
-    for (size_t i = 0; i < block.size(); i += 16)
+    switch (currentMode)
     {
-        State state;
-        std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
-        encryptBlock(state);
-        std::copy(state.begin(), state.end(), block.begin() + i);
+    case Mode::ECB:
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State state;
+            std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
+            encryptBlock(state);
+            std::copy(state.begin(), state.end(), block.begin() + i);
+        }
+        break;
+
+    case Mode::CBC:
+    {
+        State currentIV = iv;
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State state;
+            std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
+
+            // XOR with IV (or previous ciphertext)
+            for (int j = 0; j < 16; j++)
+                state[j] ^= currentIV[j];
+
+            encryptBlock(state);
+            std::copy(state.begin(), state.end(), block.begin() + i);
+            currentIV = state; // Use current ciphertext as next IV
+        }
+        break;
+    }
+
+    case Mode::CTR:
+    {
+        State counter = iv;
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State keystream = counter;
+            encryptBlock(keystream);
+
+            // XOR plaintext with keystream
+            for (int j = 0; j < 16; j++)
+                block[i + j] ^= keystream[j];
+
+            // Increment counter
+            for (int j = 15; j >= 0; j--)
+            {
+                if (++counter[j] != 0)
+                    break;
+            }
+        }
+        break;
+    }
     }
 }
 
@@ -41,12 +101,61 @@ void AES::decrypt(std::vector<uint8_t> &block)
         throw std::invalid_argument("Block size must be multiple of 16 bytes");
     }
 
-    for (size_t i = 0; i < block.size(); i += 16)
+    switch (currentMode)
     {
-        State state;
-        std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
-        decryptBlock(state);
-        std::copy(state.begin(), state.end(), block.begin() + i);
+    case Mode::ECB:
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State state;
+            std::copy(block.begin() + i, block.begin() + i + 16, state.begin());
+            decryptBlock(state);
+            std::copy(state.begin(), state.end(), block.begin() + i);
+        }
+        break;
+
+    case Mode::CBC:
+    {
+        State currentIV = iv;
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State ciphertext;
+            std::copy(block.begin() + i, block.begin() + i + 16, ciphertext.begin());
+
+            State state = ciphertext;
+            decryptBlock(state);
+
+            // XOR with IV (or previous ciphertext)
+            for (int j = 0; j < 16; j++)
+                state[j] ^= currentIV[j];
+
+            std::copy(state.begin(), state.end(), block.begin() + i);
+            currentIV = ciphertext; // Use current ciphertext as next IV
+        }
+        break;
+    }
+
+    case Mode::CTR:
+    {
+        // CTR mode is symmetric - encryption and decryption are the same
+        State counter = iv;
+        for (size_t i = 0; i < block.size(); i += 16)
+        {
+            State keystream = counter;
+            encryptBlock(keystream);
+
+            // XOR ciphertext with keystream
+            for (int j = 0; j < 16; j++)
+                block[i + j] ^= keystream[j];
+
+            // Increment counter
+            for (int j = 15; j >= 0; j--)
+            {
+                if (++counter[j] != 0)
+                    break;
+            }
+        }
+        break;
+    }
     }
 }
 
