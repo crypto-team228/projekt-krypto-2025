@@ -104,6 +104,7 @@ int main()
     std::cout << "1. ECB (Electronic Codebook)\n";
     std::cout << "2. CBC (Cipher Block Chaining)\n";
     std::cout << "3. CTR (Counter)\n";
+    std::cout << "4. GCM (Galois/Counter Mode - authenticated encryption)\n";
     std::cout << "Wybór: ";
 
     int modeChoice;
@@ -124,6 +125,10 @@ int main()
     case 3:
         selectedMode = Mode::CTR;
         std::cout << "Wybrany tryb: CTR\n\n";
+        break;
+    case 4:
+        selectedMode = Mode::GCM;
+        std::cout << "Wybrany tryb: GCM (authenticated encryption)\n\n";
         break;
     default:
         std::cout << "Nieprawidłowy wybór. Ustawiam ECB.\n\n";
@@ -152,7 +157,7 @@ int main()
     AES aes(key);
     aes.setMode(selectedMode);
 
-    // Dla trybów CBC i CTR ustaw IV
+    // Dla trybów CBC i CTR ustaw IV (16 bajtów)
     if (selectedMode == Mode::CBC || selectedMode == Mode::CTR)
     {
         std::cout << "Wprowadź wektor inicjalizujący IV (dokładnie 16 znaków): ";
@@ -173,6 +178,43 @@ int main()
 
         std::vector<uint8_t> iv(iv_string.begin(), iv_string.end());
         aes.setIV(iv);
+    }
+
+    // Dla trybu GCM ustaw IV (12 bajtów) i opcjonalnie AAD
+    if (selectedMode == Mode::GCM)
+    {
+        std::cout << "Wprowadź nonce/IV dla GCM (12 znaków): ";
+        std::string iv_string;
+        std::getline(std::cin, iv_string);
+
+        // Upewnij się, że IV ma dokładnie 12 bajtów dla GCM
+        if (iv_string.length() < 12)
+        {
+            iv_string.resize(12, '0');
+            std::cout << "Uwaga: IV był za krótki, został uzupełniony do 12 znaków.\n";
+        }
+        else if (iv_string.length() > 12)
+        {
+            iv_string = iv_string.substr(0, 12);
+            std::cout << "Uwaga: IV był za długi, został obcięty do 12 znaków.\n";
+        }
+
+        // Dodaj padding do 16 bajtów (GCM wymaga tego wewnętrznie)
+        iv_string.resize(16, '\0');
+        std::vector<uint8_t> iv(iv_string.begin(), iv_string.end());
+        aes.setIV(iv);
+
+        // Opcjonalne AAD (Additional Authenticated Data)
+        std::cout << "Wprowadź AAD (dodatkowe dane uwierzytelniane, opcjonalne - Enter aby pominąć): ";
+        std::string aad_string;
+        std::getline(std::cin, aad_string);
+
+        if (!aad_string.empty())
+        {
+            std::vector<uint8_t> aad(aad_string.begin(), aad_string.end());
+            aes.setAAD(aad);
+            std::cout << "AAD ustawione: " << aad_string << "\n";
+        }
     }
 
     std::cout << "\nWprowadź tekst do zaszyfrowania (max 256 znaków): ";
@@ -202,6 +244,19 @@ int main()
     std::cout << "Encrypted Text: " << "\n"
               << encryptedText << "\n\n";
 
+    // Dla GCM wyświetl tag uwierzytelniający
+    std::vector<uint8_t> authTag;
+    if (selectedMode == Mode::GCM)
+    {
+        authTag = aes.getTag();
+        std::cout << "Authentication Tag (GCM): ";
+        for (uint8_t byte : authTag)
+        {
+            std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)byte;
+        }
+        std::cout << std::dec << "\n\n";
+    }
+
     aes.decrypt(data);
     blocks = bytesToBlocks(data);
     std::cout << "Decrypted Blocks:\n";
@@ -212,6 +267,20 @@ int main()
     std::string decryptedText = fromBlocksToString(blocks);
     std::cout << "Decrypted Text: " << "\n"
               << decryptedText << "\n";
+
+    // Dla GCM sprawdź tag uwierzytelniający
+    if (selectedMode == Mode::GCM && !authTag.empty())
+    {
+        std::cout << "\nWeryfikacja tagu uwierzytelniającego: ";
+        if (aes.verifyTag(authTag))
+        {
+            std::cout << "POPRAWNY - dane nie zostały zmodyfikowane\n";
+        }
+        else
+        {
+            std::cout << "NIEPOPRAWNY - dane mogły zostać zmodyfikowane!\n";
+        }
+    }
 
     return 0;
 }

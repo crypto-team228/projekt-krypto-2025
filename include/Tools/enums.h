@@ -10,13 +10,12 @@ enum StringFormat{
 	UTF16
 };
 
-enum Mode {
-	CBC,
-	CFB,
-	CTR,
-	GCM,
-	GHASH
-
-
-
+// Note: Mode enum is now defined in algorithm.hpp
+// This is kept for reference only - use algorithm.hpp version
+enum ModeReference {
+	ECB,   // Electronic Codebook
+	CBC,   // Cipher Block Chaining
+	CFB,   // Cipher Feedback (not yet implemented)
+	CTR,   // Counter
+	GCM    // Galois/Counter Mode (uses GHASH internally)
 };

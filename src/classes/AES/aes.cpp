@@ -21,6 +21,10 @@ void AES::setKey(const std::vector<uint8_t> &key)
 void AES::setMode(Mode mode)
 {
     currentMode = mode;
+    if (mode == Mode::GCM)
+    {
+        initGhashKey();
+    }
 }
 
 void AES::setIV(const std::vector<uint8_t> &initVector)
@@ -91,6 +95,63 @@ void AES::encrypt(std::vector<uint8_t> &block)
         }
         break;
     }
+
+    case Mode::GCM:
+    {
+        // GCM uses 96-bit IV, we'll assume first 12 bytes of iv are the nonce
+        if (iv.size() < 12)
+        {
+            throw std::invalid_argument("GCM requires at least 12-byte IV");
+        }
+
+        // Construct J0 = IV || 0^31 || 1
+        std::array<uint8_t, 16> j0 = {0};
+        std::copy(iv.begin(), iv.begin() + 12, j0.begin());
+        j0[15] = 1;
+
+        // Save plaintext for GHASH
+        std::vector<uint8_t> plaintext = block;
+
+        // Encrypt using GCTR
+        gctrEncrypt(plaintext, block, j0);
+
+        // Prepare data for GHASH: AAD || padding || ciphertext || padding || len(AAD) || len(C)
+        std::vector<uint8_t> ghashInput;
+
+        // Add AAD with padding
+        ghashInput.insert(ghashInput.end(), aad.begin(), aad.end());
+        size_t aadPadding = (16 - (aad.size() % 16)) % 16;
+        ghashInput.insert(ghashInput.end(), aadPadding, 0);
+
+        // Add ciphertext with padding
+        ghashInput.insert(ghashInput.end(), block.begin(), block.end());
+        size_t cPadding = (16 - (block.size() % 16)) % 16;
+        ghashInput.insert(ghashInput.end(), cPadding, 0);
+
+        // Add lengths (in bits, big-endian 64-bit)
+        uint64_t aadBits = aad.size() * 8;
+        uint64_t cBits = block.size() * 8;
+        for (int i = 7; i >= 0; i--)
+        {
+            ghashInput.push_back((aadBits >> (i * 8)) & 0xFF);
+        }
+        for (int i = 7; i >= 0; i--)
+        {
+            ghashInput.push_back((cBits >> (i * 8)) & 0xFF);
+        }
+
+        // Compute GHASH
+        std::array<uint8_t, 16> s;
+        ghash(ghashInput, s);
+
+        // Compute authentication tag: T = GCTR(J0, S)
+        std::vector<uint8_t> sVec(s.begin(), s.end());
+        std::vector<uint8_t> tagVec;
+        gctrEncrypt(sVec, tagVec, j0);
+        std::copy(tagVec.begin(), tagVec.end(), authTag.begin());
+
+        break;
+    }
     }
 }
 
@@ -154,6 +215,63 @@ void AES::decrypt(std::vector<uint8_t> &block)
                     break;
             }
         }
+        break;
+    }
+
+    case Mode::GCM:
+    {
+        // GCM uses 96-bit IV
+        if (iv.size() < 12)
+        {
+            throw std::invalid_argument("GCM requires at least 12-byte IV");
+        }
+
+        // Construct J0 = IV || 0^31 || 1
+        std::array<uint8_t, 16> j0 = {0};
+        std::copy(iv.begin(), iv.begin() + 12, j0.begin());
+        j0[15] = 1;
+
+        // Save ciphertext for GHASH verification
+        std::vector<uint8_t> ciphertext = block;
+
+        // Prepare data for GHASH: AAD || padding || ciphertext || padding || len(AAD) || len(C)
+        std::vector<uint8_t> ghashInput;
+
+        // Add AAD with padding
+        ghashInput.insert(ghashInput.end(), aad.begin(), aad.end());
+        size_t aadPadding = (16 - (aad.size() % 16)) % 16;
+        ghashInput.insert(ghashInput.end(), aadPadding, 0);
+
+        // Add ciphertext with padding
+        ghashInput.insert(ghashInput.end(), ciphertext.begin(), ciphertext.end());
+        size_t cPadding = (16 - (ciphertext.size() % 16)) % 16;
+        ghashInput.insert(ghashInput.end(), cPadding, 0);
+
+        // Add lengths (in bits, big-endian 64-bit)
+        uint64_t aadBits = aad.size() * 8;
+        uint64_t cBits = ciphertext.size() * 8;
+        for (int i = 7; i >= 0; i--)
+        {
+            ghashInput.push_back((aadBits >> (i * 8)) & 0xFF);
+        }
+        for (int i = 7; i >= 0; i--)
+        {
+            ghashInput.push_back((cBits >> (i * 8)) & 0xFF);
+        }
+
+        // Compute GHASH
+        std::array<uint8_t, 16> s;
+        ghash(ghashInput, s);
+
+        // Compute authentication tag: T = GCTR(J0, S)
+        std::vector<uint8_t> sVec(s.begin(), s.end());
+        std::vector<uint8_t> tagVec;
+        gctrEncrypt(sVec, tagVec, j0);
+        std::copy(tagVec.begin(), tagVec.end(), authTag.begin());
+
+        // Decrypt using GCTR (same as encryption in CTR mode)
+        gctrEncrypt(ciphertext, block, j0);
+
         break;
     }
     }
@@ -396,5 +514,122 @@ void AES::invMixColumns(State &st) const
         st[i + 1] = gmul(a0, 9) ^ gmul(a1, 14) ^ gmul(a2, 11) ^ gmul(a3, 13);
         st[i + 2] = gmul(a0, 13) ^ gmul(a1, 9) ^ gmul(a2, 14) ^ gmul(a3, 11);
         st[i + 3] = gmul(a0, 11) ^ gmul(a1, 13) ^ gmul(a2, 9) ^ gmul(a3, 14);
+    }
+}
+
+// --- GCM-specific methods ---
+
+void AES::setAAD(const std::vector<uint8_t> &additionalData)
+{
+    aad = additionalData;
+}
+
+std::vector<uint8_t> AES::getTag()
+{
+    return std::vector<uint8_t>(authTag.begin(), authTag.end());
+}
+
+bool AES::verifyTag(const std::vector<uint8_t> &tag)
+{
+    if (tag.size() != 16)
+        return false;
+
+    for (size_t i = 0; i < 16; i++)
+    {
+        if (tag[i] != authTag[i])
+            return false;
+    }
+    return true;
+}
+
+// Initialize GHASH key H = E(K, 0^128)
+void AES::initGhashKey()
+{
+    ghashKey.fill(0);
+    State state = {0};
+    encryptBlock(state);
+    std::copy(state.begin(), state.end(), ghashKey.begin());
+}
+
+// GF(2^128) multiplication for GHASH
+void AES::gfMul128(std::array<uint8_t, 16> &x, const std::array<uint8_t, 16> &y) const
+{
+    std::array<uint8_t, 16> z = {0};
+    std::array<uint8_t, 16> v = y;
+
+    for (int i = 0; i < 128; i++)
+    {
+        // If bit i of x is 1, XOR z with v
+        int byteIdx = i / 8;
+        int bitIdx = 7 - (i % 8);
+        if ((x[byteIdx] >> bitIdx) & 1)
+        {
+            for (int j = 0; j < 16; j++)
+                z[j] ^= v[j];
+        }
+
+        // Check if LSB of v is 1
+        bool lsb = v[15] & 1;
+
+        // Right shift v by 1 bit
+        for (int j = 15; j > 0; j--)
+        {
+            v[j] = (v[j] >> 1) | ((v[j-1] & 1) << 7);
+        }
+        v[0] >>= 1;
+
+        // If LSB was 1, XOR v with R (0xE1 in the MSB)
+        if (lsb)
+            v[0] ^= 0xE1;
+    }
+
+    x = z;
+}
+
+// GHASH function
+void AES::ghash(const std::vector<uint8_t> &data, std::array<uint8_t, 16> &result) const
+{
+    result.fill(0);
+
+    // Process complete 16-byte blocks
+    size_t numBlocks = (data.size() + 15) / 16;
+
+    for (size_t i = 0; i < numBlocks; i++)
+    {
+        std::array<uint8_t, 16> block = {0};
+        size_t blockSize = std::min<size_t>(16, data.size() - i * 16);
+        std::copy(data.begin() + i * 16, data.begin() + i * 16 + blockSize, block.begin());
+
+        // XOR with current result
+        for (int j = 0; j < 16; j++)
+            result[j] ^= block[j];
+
+        // Multiply by H in GF(2^128)
+        gfMul128(result, ghashKey);
+    }
+}
+
+// GCTR function (CTR mode encryption for GCM)
+void AES::gctrEncrypt(const std::vector<uint8_t> &input, std::vector<uint8_t> &output,
+                      const std::array<uint8_t, 16> &icb)
+{
+    output.resize(input.size());
+    std::array<uint8_t, 16> counter = icb;
+
+    for (size_t i = 0; i < input.size(); i += 16)
+    {
+        State keystream = counter;
+        encryptBlock(keystream);
+
+        size_t blockSize = std::min<size_t>(16, input.size() - i);
+        for (size_t j = 0; j < blockSize; j++)
+            output[i + j] = input[i + j] ^ keystream[j];
+
+        // Increment counter (big-endian)
+        for (int j = 15; j >= 0; j--)
+        {
+            if (++counter[j] != 0)
+                break;
+        }
     }
 }

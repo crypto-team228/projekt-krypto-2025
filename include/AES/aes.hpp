@@ -21,14 +21,24 @@ public:
     void encrypt(std::vector<uint8_t> &block) override;
     void decrypt(std::vector<uint8_t> &block) override;
 
-    // Set IV for CBC/CTR modes
+    // GCM-specific methods
+    void setAAD(const std::vector<uint8_t> &aad) override;
+    std::vector<uint8_t> getTag() override;
+    bool verifyTag(const std::vector<uint8_t> &tag) override;
+
+    // Set IV for CBC/CTR/GCM modes
     void setIV(const std::vector<uint8_t> &iv);
 
 private:
     using RoundKeys = std::array<State, 11>; // 11 round keys for AES-128
 
     Mode currentMode = Mode::ECB;
-    State iv = {0}; // Initialization vector for CBC/CTR modes
+    State iv = {0}; // Initialization vector for CBC/CTR/GCM modes
+
+    // GCM-specific state
+    std::vector<uint8_t> aad;           // Additional Authenticated Data
+    std::array<uint8_t, 16> authTag;    // Authentication tag
+    std::array<uint8_t, 16> ghashKey;   // H = E(K, 0^128) for GHASH
 
     // --- S-box ---
     static constexpr uint8_t sbox[256] = {
@@ -95,4 +105,11 @@ private:
     void invShiftRows(State &st) const;
     void invMixColumns(State &st) const;
     static uint8_t gmul(uint8_t a, uint8_t b);
+
+    // --- GCM/GHASH operations ---
+    void initGhashKey();
+    void ghash(const std::vector<uint8_t> &data, std::array<uint8_t, 16> &result) const;
+    void gfMul128(std::array<uint8_t, 16> &x, const std::array<uint8_t, 16> &y) const;
+    void gctrEncrypt(const std::vector<uint8_t> &input, std::vector<uint8_t> &output,
+                     const std::array<uint8_t, 16> &icb);
 };
