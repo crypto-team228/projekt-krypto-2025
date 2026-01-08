@@ -9,9 +9,9 @@
 
 int main() {
 
-	std::string text = "0123456789ABCDEF";
+	std::string text = "0123456789ABCDEF0123456789ABCDEF";
 	std::vector<uint8_t> plaintext = DataConverter::HexToBytes(text);
-	std::vector<uint8_t> keyBytes = DataConverter::HexToBits("033457799BBCDFF1133457799BBCDFF1233457799BBCDFF1");
+	std::vector<uint8_t> keyBytes = DataConverter::HexToBytes("033457799BBCDFF1133457799BBCDFF1233457799BBCDFF1");
 	std::string expectedEncrypted = "37d174403fc04f1a";
 
 	TDES tdes(keyBytes);

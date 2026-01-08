@@ -12,7 +12,7 @@ public:
 
     // string (bajty) -> hex ASCII (2 znaki na bajt)
     static std::string StringToHex(const std::string& input) {
-        static const char* hex = "0123456789ABCDEF";
+        static const char* hex = "0123456789abcdef";
         std::string out;
         out.reserve(input.size() * 2);
 
@@ -57,7 +57,7 @@ public:
     }
 
     static std::string BytesToHex(const std::vector<uint8_t>& bytes) {
-        static const char* hex = "0123456789ABCDEF";
+        static const char* hex = "0123456789abcdef";
         std::string out;
         out.reserve(bytes.size() * 2);
 
@@ -70,7 +70,7 @@ public:
 
     template<std::size_t N>
     static std::string BytesToHex(const std::array<uint8_t, N>& bytes) {
-        static const char* hex = "0123456789ABCDEF";
+        static const char* hex = "0123456789abcdef";
         std::string out;
         out.reserve(N * 2);
 
@@ -304,7 +304,7 @@ private:
     }
 
     static char ValueToHexChar(uint8_t v) {
-        static const char* hex = "0123456789ABCDEF";
+        static const char* hex = "0123456789abcdef";
         return hex[v & 0x0F];
     }
 };

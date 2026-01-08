@@ -7,38 +7,38 @@ size_t TDES::blockSize() const {
     return BLOCK_SIZE;
 }
 
-void TDES::setKey(const std::vector<uint8_t>& key) {
-    // zak³adam: key to 64/128/192 bitów *w bitach* (0/1), jak wczeœniej
-    if (key.size() == 64) {
-        // 1-key 3DES: K1 = K2 = K3
-        subkeys1 = GenerateSubkeys(key);
+void TDES::setKey(const std::vector<uint8_t>& key)
+{
+    if (key.size() == 8) {
+        // 1-key 3DES
+        subkeys1 = GenerateSubkeys( DataConverter::BytesToBits(key));
         subkeys2 = subkeys1;
         subkeys3 = subkeys1;
     }
-    else if (key.size() == 128) {
-        // 2-key 3DES: K1, K2, K3 = K1
-        std::vector<uint8_t> k1(key.begin(), key.begin() + 64);
-        std::vector<uint8_t> k2(key.begin() + 64, key.begin() + 128);
+    else if (key.size() == 16) {
+        // 2-key 3DES
+        std::vector<uint8_t> k1(key.begin(), key.begin() + 8);
+        std::vector<uint8_t> k2(key.begin() + 8, key.begin() + 16);
 
-        subkeys1 = GenerateSubkeys(k1);
-        subkeys2 = GenerateSubkeys(k2);
+        subkeys1 = GenerateSubkeys(DataConverter::BytesToBits(k1));
+        subkeys2 = GenerateSubkeys(DataConverter::BytesToBits(k2));
         subkeys3 = subkeys1;
     }
-    else if (key.size() == 192) {
-        // 3-key 3DES: K1, K2, K3
-        std::vector<uint8_t> k1(key.begin(), key.begin() + 64);
-        std::vector<uint8_t> k2(key.begin() + 64, key.begin() + 128);
-        std::vector<uint8_t> k3(key.begin() + 128, key.begin() + 192);
+    else if (key.size() == 24) {
+        // 3-key 3DES
+        std::vector<uint8_t> k1(key.begin(), key.begin() + 8);
+        std::vector<uint8_t> k2(key.begin() + 8, key.begin() + 16);
+        std::vector<uint8_t> k3(key.begin() + 16, key.begin() + 24);
 
-        subkeys1 = GenerateSubkeys(k1);
-        subkeys2 = GenerateSubkeys(k2);
-        subkeys3 = GenerateSubkeys(k3);
+        subkeys1 = GenerateSubkeys(DataConverter::BytesToBits(k1));
+        subkeys2 = GenerateSubkeys(DataConverter::BytesToBits(k2));
+        subkeys3 = GenerateSubkeys(DataConverter::BytesToBits(k3));
     }
     else {
-		
-        throw std::invalid_argument("TDES::setKey: expected 64, 128 or 192 bits:"+ key.size());
+        throw std::invalid_argument("TDES::setKey: expected 8, 16 or 24 bytes");
     }
 }
+
 
 void TDES::encryptBlock(const uint8_t* in, uint8_t* out) const {
     if (!in || !out) return;
@@ -59,7 +59,7 @@ void TDES::decryptBlock(const uint8_t* in, uint8_t* out) const {
     Bit64 decBits = TripleDESDecrypt(blockBits);
 	auto decBytes = DataConverter::BitsArrayToBytes(decBits);
 
-    DataConverter::ArrayToBytes(decBits, out);
+    DataConverter::ArrayToBytes(decBytes, out);
 }
 
 // ================= 3DES (EDE) na bitach =================
