@@ -7,6 +7,10 @@ AES::AES(const Key128 &key)
     keyExpansion(key);
 }
 
+size_t AES::blockSize() const {
+    return BLOCK_SIZE;
+}
+
 void AES::setKey(const std::vector<uint8_t> &key)
 {
     if (key.size() != 16)

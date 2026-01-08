@@ -1,11 +1,11 @@
 #include <mode/CTR.hpp>
 
-std::string CTR::encryptBlock(const std::string& data) {
+std::vector<uint8_t> CTR::encrypt(const std::vector<uint8_t>& data, Cipher& cipher) {
     // Implement CTR encryption logic here
     return data;
 }
 
-std::string CTR::decryptBlock(const std::string& data) {
+std::vector<uint8_t> CTR::decrypt(const std::vector<uint8_t>& data, Cipher& cipher) {
     // Implement CTR decryption logic here
     return data;
 }

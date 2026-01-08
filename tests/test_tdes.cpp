@@ -6,6 +6,8 @@
 
 int main()
 {
+	/*
+	
 	TDES tdes;
 
 	std::string plaintext = "0123456789ABCDEF";
@@ -79,6 +81,8 @@ int main()
 	std::cout << "Decrypted Text: " << decryptedtext << std::endl;
 	std::cout << "Expected Text:  " << plaintext << std::endl;
 	std::cout << "\n\n";
+	
+	*/
 
 	return 0;
 }

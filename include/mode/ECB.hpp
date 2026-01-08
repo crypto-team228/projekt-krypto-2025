@@ -3,7 +3,6 @@
 
 class ECB : public Mode {
 public:
-    std::string encryptBlock(const std::string& data) override;
-    std::string decryptBlock(const std::string& data) override;
-    ~ECB() override = default;
+    std::vector<uint8_t> encrypt(const std::vector<uint8_t>& data, Cipher& cipher) override;
+    std::vector<uint8_t> decrypt(const std::vector<uint8_t>& data, Cipher& cipher) override;
 };

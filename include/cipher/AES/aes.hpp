@@ -19,7 +19,8 @@ public:
     void setKey(const std::vector<uint8_t> &key) override;
     void encryptBlock(const uint8_t* in, uint8_t* out) const override;
     void decryptBlock(const uint8_t* in, uint8_t* out) const override;
-
+    static constexpr size_t BLOCK_SIZE = 16;
+    size_t blockSize() const override;
 private:
     using RoundKeys = std::array<State, 11>; // 11 round keys for AES-128
 
