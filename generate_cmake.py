@@ -1,22 +1,27 @@
+# -*- coding: utf-8 -*-
 import os
 
-excluded = {"out", "build"}
+# Katalogi, których NIE ruszamy
+EXCLUDED = {"out", "build", "include", "external", "tests"}
 
 PROJECT_NAME = "project-krypto"
-MAIN_EXECUTABLE = "crypto_app"
-MAIN_SOURCE = os.path.join("src", "AES_main.cpp")
 
-TDES_EXECUTABLE = "TDES_app"
-TDES_SOURCE = os.path.join("src", "TDES_main.cpp")
-TDES_TEST_EXECUTABLE = "TDES_test"
-TDES_TEST = os.path.join("tests", "test_tdes.cpp")
+# Aplikacje
+MAIN_EXECUTABLE = "crypto_app_cli"
+MAIN_SOURCE = "src/cli/cli.cpp"
 
 AES_EXECUTABLE = "AES_app"
-AES_SOURCE = os.path.join("src", "AES_main.cpp")
+AES_SOURCE = "src/AES_main.cpp"
+
+TDES_EXECUTABLE = "TDES_app"
+TDES_SOURCE = "src/TDES_main.cpp"
+
+# Testy
 AES_TEST_EXECUTABLE = "AES_test"
-AES_TEST = os.path.join("tests", "test_aes.cpp")
+AES_TEST_SOURCE = "tests/test_aes.cpp"
 
-
+TDES_TEST_EXECUTABLE = "TDES_test"
+TDES_TEST_SOURCE = "tests/test_tdes.cpp"
 
 
 def generate_module_cmake(module_name, src_files):
@@ -24,72 +29,100 @@ def generate_module_cmake(module_name, src_files):
     for src in src_files:
         cmake += f"    {src.replace(os.sep, '/')}\n"
     cmake += ")\n"
-    cmake += f"target_include_directories({module_name} PUBLIC ${{CMAKE_SOURCE_DIR}}/include)\n"
-
+    cmake += (
+        f"target_include_directories({module_name} PUBLIC "
+        "${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)\n"
+    )
     return cmake
+
+
+def make_unique_module_name(dirpath):
+    rel = os.path.relpath(dirpath, ".")
+    return rel.replace(os.sep, "_")
+
 
 def walk_project(root_dir):
     modules = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
-        if any(part in excluded for part in dirpath.split(os.sep)):
+        # Pomijamy katalogi wykluczone
+        if any(part in EXCLUDED for part in dirpath.split(os.sep)):
             continue
+
+        # Pomijamy katalog g³ówny
         if dirpath == root_dir:
             continue
 
-        src_files = [f for f in filenames if f.endswith(".cpp")]
-        if src_files:
-            module_name = os.path.basename(dirpath)
-            modules.append((module_name, dirpath, src_files))
-            cmake_path = os.path.join(dirpath, "CMakeLists.txt")
-            with open(cmake_path, "w") as f:
-                f.write(generate_module_cmake(module_name, src_files))
+        # Zbieramy pliki .cpp
+        src_files = [
+            f for f in filenames
+            if f.endswith(".cpp") and not f.endswith("_main.cpp") and f != "cli.cpp"
+        ]
+
+        if not src_files:
+            continue
+
+        module_name = make_unique_module_name(dirpath)
+        modules.append((module_name, dirpath, src_files))
+
+        # Generujemy CMakeLists.txt dla modu³u
+        cmake_path = os.path.join(dirpath, "CMakeLists.txt")
+        with open(cmake_path, "w") as f:
+            f.write(generate_module_cmake(module_name, src_files))
+
     return modules
 
+
 def generate_root_cmake(modules):
-    cmake = "cmake_minimum_required(VERSION 3.15)\n"
+    cmake = f"cmake_minimum_required(VERSION 3.15)\n"
     cmake += f"project({PROJECT_NAME})\n\n"
-    for _, path, _ in modules:
+
+    # GoogleTest
+    cmake += "include(FetchContent)\n"
+    cmake += "FetchContent_Declare(\n"
+    cmake += "    googletest\n"
+    cmake += "    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip\n"
+    cmake += ")\n"
+    cmake += "FetchContent_MakeAvailable(googletest)\n\n"
+
+    cmake += "enable_testing()\n"
+    cmake += "include(GoogleTest)\n\n"
+
+    # Dodajemy modu³y
+    for module_name, path, _ in modules:
         rel_path = os.path.relpath(path, ".").replace(os.sep, "/")
         cmake += f"add_subdirectory(\"{rel_path}\")\n"
 
-    # Main
-    cmake += f"\nadd_executable({MAIN_EXECUTABLE} {MAIN_SOURCE.replace(os.sep, '/')})\n"
-    cmake += f"target_link_libraries({MAIN_EXECUTABLE} PRIVATE "
-    cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
+    # Aplikacje
+    def add_app(name, source):
+        nonlocal cmake
+        cmake += f"\nadd_executable({name} {source})\n"
+        cmake += f"target_link_libraries({name} PRIVATE "
+        cmake += " ".join([m for m, _, _ in modules])
+        cmake += ")\n"
 
-    #AES
-    cmake += f"\nadd_executable({AES_EXECUTABLE} {AES_SOURCE.replace(os.sep, '/')})\n"
-    cmake += f"target_link_libraries({AES_EXECUTABLE} PRIVATE "
-    cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
+    add_app(MAIN_EXECUTABLE, MAIN_SOURCE)
+    add_app(AES_EXECUTABLE, AES_SOURCE)
+    add_app(TDES_EXECUTABLE, TDES_SOURCE)
 
-    #TDES
-    cmake += f"\nadd_executable({TDES_EXECUTABLE} {TDES_SOURCE.replace(os.sep, '/')})\n"
-    cmake += f"target_link_libraries({TDES_EXECUTABLE} PRIVATE "
-    cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
-        
-    # --- Tests
-    #AES
-    cmake += f"\nadd_executable({AES_TEST_EXECUTABLE} {AES_TEST.replace(os.sep, '/')})\n"
-    cmake += f"target_link_libraries({AES_TEST_EXECUTABLE} PRIVATE "
-    cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
+    # Testy
+    def add_test(name, source):
+        nonlocal cmake
+        cmake += f"\nadd_executable({name} {source})\n"
+        cmake += f"target_link_libraries({name} PRIVATE "
+        cmake += " ".join([m for m, _, _ in modules])
+        cmake += " gtest gtest_main)\n"
+        cmake += f"target_include_directories({name} PRIVATE "
+        cmake += "${gtest_SOURCE_DIR}/include)\n"
+        cmake += f"gtest_discover_tests({name})\n"
 
-    #TDES
-    cmake += f"\nadd_executable({TDES_TEST_EXECUTABLE} {TDES_TEST.replace(os.sep, '/')})\n"
-    cmake += f"target_link_libraries({TDES_TEST_EXECUTABLE} PRIVATE "
-    cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
-
+    add_test(AES_TEST_EXECUTABLE, AES_TEST_SOURCE)
+    add_test(TDES_TEST_EXECUTABLE, TDES_TEST_SOURCE)
 
     return cmake
 
 
 if __name__ == "__main__":
-    root = "."
-    modules = walk_project(root)
+    modules = walk_project(".")
     with open("CMakeLists.txt", "w", encoding="utf-8") as f:
         f.write(generate_root_cmake(modules))
-    print("Wygenerowano pliki CMakeLists.txt dla projektu.")
+    print("Wygenerowano pliki CMakeLists.txt.")
