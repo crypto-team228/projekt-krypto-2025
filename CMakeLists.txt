@@ -35,3 +35,9 @@ add_executable(TDES_test tests/test_tdes.cpp)
 target_link_libraries(TDES_test PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils gtest gtest_main)
 target_include_directories(TDES_test PRIVATE ${gtest_SOURCE_DIR}/include)
 gtest_discover_tests(TDES_test)
+
+# RNG/Nonce test
+add_executable(RNG_Nonce_test tests/test_rng_nonce.cpp)
+target_link_libraries(RNG_Nonce_test PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils gtest gtest_main)
+target_include_directories(RNG_Nonce_test PRIVATE ${gtest_SOURCE_DIR}/include)
+gtest_discover_tests(RNG_Nonce_test)
