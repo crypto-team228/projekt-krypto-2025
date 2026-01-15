@@ -12,8 +12,9 @@ public:
     using State = std::array<uint8_t, 16>;
     using Key128 = std::array<uint8_t, 16>;
 
-    AES(const Key128 &key);
+    AES(const std::vector<uint8_t>&key);
     AES() = default;
+	~AES();
 
     // Override Algorithm interface methods
     void setKey(const std::vector<uint8_t> &key) override;
@@ -78,13 +79,11 @@ private:
     void keyExpansion(const Key128 &key);
 
     // --- Encryption operations ---
-    void encryptBlock(State &state) const;
     void subBytes(State &st) const;
     void shiftRows(State &st) const;
     void mixColumns(State &st) const;
 
     // --- Decryption operations ---
-    void decryptBlock(State &state) const;
     void invSubBytes(State &st) const;
     void invShiftRows(State &st) const;
     void invMixColumns(State &st) const;

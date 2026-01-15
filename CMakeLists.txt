@@ -26,12 +26,12 @@ target_link_libraries(AES_app PRIVATE src_cipher_AES src_cipher_TDES src_core sr
 add_executable(TDES_app src/TDES_main.cpp)
 target_link_libraries(TDES_app PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils)
 
-add_executable(AES_test tests/test_aes.cpp)
-target_link_libraries(AES_test PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils gtest gtest_main)
-target_include_directories(AES_test PRIVATE ${gtest_SOURCE_DIR}/include)
-gtest_discover_tests(AES_test)
-
-add_executable(TDES_test tests/test_tdes.cpp)
-target_link_libraries(TDES_test PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils gtest gtest_main)
-target_include_directories(TDES_test PRIVATE ${gtest_SOURCE_DIR}/include)
-gtest_discover_tests(TDES_test)
+add_executable(crypto_tests
+    tests/main.cpp
+    tests/test_aes_kat.cpp
+    tests/test_tdes_kat.cpp
+)
+target_link_libraries(crypto_tests PRIVATE src_cipher_AES src_cipher_TDES src_core src_mode src_utils gtest gtest_main)
+target_include_directories(crypto_tests PRIVATE ${googletest_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include)
+gtest_discover_tests(crypto_tests)
+file(COPY tests/data DESTINATION ${CMAKE_BINARY_DIR}/tests)

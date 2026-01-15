@@ -2,16 +2,20 @@
 #include <vector>
 #include <stdexcept>
 
-AES::AES(const Key128 &key)
+AES::AES(const std::vector<uint8_t>&key)
 {
-    keyExpansion(key);
+    setKey(key);
+}
+AES::~AES()
+{
+    secure_memzero(roundKeys.data(), roundKeys.size() * sizeof(roundKeys[0]));
 }
 
 size_t AES::blockSize() const {
     return BLOCK_SIZE;
 }
 
-void AES::setKey(const std::vector<uint8_t> &key)
+void AES::setKey(const std::vector<uint8_t>&key)
 {
     if (key.size() != 16)
     {

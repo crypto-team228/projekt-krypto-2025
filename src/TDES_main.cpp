@@ -22,6 +22,7 @@ int main() {
 	for (auto b : test) {
 		std::cout << std::hex << (int)b;
 	}
+
 	std::cout << std::endl;
 	std::cout << "Expected : " << expectedEncrypted << std::endl;
 
