@@ -5,12 +5,16 @@
 #include <array>
 
 #include "cipher/AES/aes.hpp"
+#include "mode/mode.hpp"
+#include "mode/ecb.hpp"
+#include "mode/ctr.hpp"
+#include "mode/cbc.hpp"
 
-std::vector<std::array<uint8_t, 16>> split_to_128bit_blocks(const std::string &text)
+std::vector<std::vector<uint8_t>> split_to_128bit_blocks(const std::string& text)
 {
-    std::vector<std::array<uint8_t, 16>> blocks;
+    std::vector<std::vector<uint8_t>> blocks;
 
-    std::array<uint8_t, 16> block{};
+    std::vector<uint8_t> block(16, 0);
     size_t index = 0;
 
     for (unsigned char c : text)
@@ -20,7 +24,7 @@ std::vector<std::array<uint8_t, 16>> split_to_128bit_blocks(const std::string &t
         if (index == 16)
         {
             blocks.push_back(block);
-            block.fill(0);
+            block.assign(16, 0);
             index = 0;
         }
     }
@@ -31,12 +35,14 @@ std::vector<std::array<uint8_t, 16>> split_to_128bit_blocks(const std::string &t
     {
         block[i] = padding_value;
     }
+
     blocks.push_back(block);
 
     return blocks;
-};
+}
 
-std::string fromBlocksToString(const std::vector<std::array<uint8_t, 16>> &blocks)
+
+std::string fromBlocksToString(const std::vector<std::vector<uint8_t>> &blocks)
 {
     std::string result;
 
@@ -61,7 +67,7 @@ std::string fromBlocksToString(const std::vector<std::array<uint8_t, 16>> &block
     return result;
 };
 
-std::vector<uint8_t> blocksToBytes(const std::vector<std::array<uint8_t, 16>> &blocks)
+std::vector<uint8_t> blocksToBytes(const std::vector<std::vector<uint8_t>> &blocks)
 {
     std::vector<uint8_t> result;
     for (const auto &block : blocks)
@@ -71,19 +77,27 @@ std::vector<uint8_t> blocksToBytes(const std::vector<std::array<uint8_t, 16>> &b
     return result;
 }
 
-std::vector<std::array<uint8_t, 16>> bytesToBlocks(const std::vector<uint8_t> &bytes)
+std::vector<std::vector<uint8_t>> bytesToBlocks(const std::vector<uint8_t>& bytes)
 {
-    std::vector<std::array<uint8_t, 16>> blocks;
+    std::vector<std::vector<uint8_t>> blocks;
+
     for (size_t i = 0; i < bytes.size(); i += 16)
     {
-        std::array<uint8_t, 16> block;
-        std::copy(bytes.begin() + i, bytes.begin() + i + 16, block.begin());
+        std::vector<uint8_t> block(16, 0);
+
+        size_t remaining = bytes.size() - i;
+        size_t toCopy = remaining < 16 ? remaining : 16;
+
+        std::copy_n(bytes.begin() + i, toCopy, block.begin());
+
         blocks.push_back(block);
     }
+
     return blocks;
 }
 
-void printBlock(const AES::State &st)
+
+void printBlock(const std::vector<uint8_t> &st)
 {
     for (int i = 0; i < 16; i++)
     {
@@ -95,6 +109,10 @@ void printBlock(const AES::State &st)
 
 int main()
 {
+    ECB ecb;
+
+
+
     std::cout << "========================================\n";
     std::cout << "         AES Encryption/Decryption     \n";
     std::cout << "========================================\n\n";
@@ -105,7 +123,7 @@ int main()
 
     std::string secret_key = "Awawqwer123!!90L"; // 16 bytes = 128 bits
 
-    AES::Key128 key = split_to_128bit_blocks(secret_key)[0];
+    std::vector<uint8_t> key = split_to_128bit_blocks(secret_key)[0];
     std::cout << "Secret key in blocks\n";
     for (int i = 0; i < 16; i++)
     {
@@ -126,8 +144,8 @@ int main()
     std::cout << "\n";
 
     std::vector<uint8_t> data = blocksToBytes(blocks);
-    aes.encryptBlock(data.data(), data.data());
-    blocks = bytesToBlocks(data);
+    auto enc = ecb.encrypt(data, aes);
+    blocks = bytesToBlocks(enc);
 
     std::cout << "Encrypted Blocks:\n";
     for (const auto &b : blocks)
@@ -138,8 +156,8 @@ int main()
     std::cout << "Encrypted Text: " << "\n"
               << encryptedText << "\n\n";
 
-    aes.decryptBlock(data.data(), data.data());
-    blocks = bytesToBlocks(data);
+    auto dec = ecb.decrypt(enc, aes);
+    blocks = bytesToBlocks(dec);
     std::cout << "Decrypted Blocks:\n";
     for (const auto &b : blocks)
     {

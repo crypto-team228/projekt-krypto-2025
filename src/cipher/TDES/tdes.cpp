@@ -3,6 +3,14 @@
 TDES::TDES(const std::vector<uint8_t>& key) {
     setKey(key);
 }
+
+TDES::~TDES()
+{
+    secure_memzero(subkeys1.data(), sizeof(subkeys1));
+    secure_memzero(subkeys2.data(), sizeof(subkeys2));
+	secure_memzero(subkeys3.data(), sizeof(subkeys3));
+}
+
 size_t TDES::blockSize() const {
     return BLOCK_SIZE;
 }

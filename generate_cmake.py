@@ -2,7 +2,7 @@
 import os
 
 # Katalogi, których NIE ruszamy
-EXCLUDED = {"out", "build", "include", "external", "tests"}
+EXCLUDED = {"out", "build", "include", "external", "scripts","tests"}
 
 PROJECT_NAME = "project-krypto"
 
@@ -17,11 +17,8 @@ TDES_EXECUTABLE = "TDES_app"
 TDES_SOURCE = "src/TDES_main.cpp"
 
 # Testy
-AES_TEST_EXECUTABLE = "AES_test"
-AES_TEST_SOURCE = "tests/test_aes.cpp"
+TEST_EXECUTABLE = "crypto_tests"
 
-TDES_TEST_EXECUTABLE = "TDES_test"
-TDES_TEST_SOURCE = "tests/test_tdes.cpp"
 
 
 def generate_module_cmake(module_name, src_files):
@@ -39,6 +36,14 @@ def generate_module_cmake(module_name, src_files):
 def make_unique_module_name(dirpath):
     rel = os.path.relpath(dirpath, ".")
     return rel.replace(os.sep, "_")
+
+def collect_test_sources():
+    test_sources = []
+    for dirpath, _, filenames in os.walk("tests"):
+        for f in filenames:
+            if f.endswith(".cpp"):
+                test_sources.append(os.path.join(dirpath, f).replace(os.sep, "/"))
+    return test_sources
 
 
 def walk_project(root_dir):
@@ -104,19 +109,24 @@ def generate_root_cmake(modules):
     add_app(AES_EXECUTABLE, AES_SOURCE)
     add_app(TDES_EXECUTABLE, TDES_SOURCE)
 
-    # Testy
-    def add_test(name, source):
-        nonlocal cmake
-        cmake += f"\nadd_executable({name} {source})\n"
-        cmake += f"target_link_libraries({name} PRIVATE "
-        cmake += " ".join([m for m, _, _ in modules])
-        cmake += " gtest gtest_main)\n"
-        cmake += f"target_include_directories({name} PRIVATE "
-        cmake += "${gtest_SOURCE_DIR}/include)\n"
-        cmake += f"gtest_discover_tests({name})\n"
+    test_sources = collect_test_sources()
 
-    add_test(AES_TEST_EXECUTABLE, AES_TEST_SOURCE)
-    add_test(TDES_TEST_EXECUTABLE, TDES_TEST_SOURCE)
+    cmake += f"\nadd_executable({TEST_EXECUTABLE}\n"
+    for src in test_sources:
+        cmake += f"    {src}\n"
+    cmake += ")\n"
+
+    cmake += f"target_link_libraries({TEST_EXECUTABLE} PRIVATE " 
+    cmake += " ".join([m for m, _, _ in modules]) 
+    cmake += " gtest gtest_main)\n" 
+    
+    cmake += f"target_include_directories({TEST_EXECUTABLE} PRIVATE "
+    cmake += "${googletest_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include)\n"
+
+
+
+    cmake += f"gtest_discover_tests({TEST_EXECUTABLE})\n" 
+    cmake += "file(COPY tests/data DESTINATION ${CMAKE_BINARY_DIR}/tests)\n"
 
     return cmake
 

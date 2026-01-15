@@ -11,8 +11,9 @@
 class TDES : public Cipher
 {
 public:
-	TDES();
 	TDES(const std::vector<uint8_t>& key);
+	TDES() = default;
+	~TDES();
 	void encryptBlock(const uint8_t* in, uint8_t* out) const override;
 	void decryptBlock(const uint8_t* in, uint8_t* out) const override;
 	void setKey(const std::vector<uint8_t>& key) override;
@@ -46,7 +47,6 @@ private:
 		std::array<uint8_t, N> result{};
 		for (std::size_t i = 0; i < N; i++)
 		{
-			// jeœli tabele s¹ 1-based, u¿yj table[i] - 1 
 			std::size_t idx = static_cast<std::size_t>(table[i]);
 			result[i] = input[idx];
 		}
