@@ -1,4 +1,5 @@
 add_library(src_mode
+    blockMode.cpp
     CBC.cpp
     CTR.cpp
     ECB.cpp

@@ -126,7 +126,22 @@ def generate_root_cmake(modules):
 
 
     cmake += f"gtest_discover_tests({TEST_EXECUTABLE})\n" 
-    cmake += "file(COPY tests/data DESTINATION ${CMAKE_BINARY_DIR}/tests)\n"
+    cmake += f"""
+        add_custom_command(
+            TARGET {TEST_EXECUTABLE} POST_BUILD
+            COMMAND ${{CMAKE_COMMAND}} -E copy_directory
+                    ${{CMAKE_SOURCE_DIR}}/tests/data
+                    ${{CMAKE_BINARY_DIR}}/tests/data
+        )
+
+        add_custom_command(
+            TARGET {TEST_EXECUTABLE} POST_BUILD
+            COMMAND ${{CMAKE_COMMAND}} -E copy_directory
+                    ${{CMAKE_SOURCE_DIR}}/tests/nist
+                    ${{CMAKE_BINARY_DIR}}/tests/nist
+        )
+        """
+
 
     return cmake
 
