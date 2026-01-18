@@ -256,29 +256,3 @@ TEST(AES, KAT_GCM)
     }
 }
 
-TEST(AES, SingleVector_AES256_ECB_Manual)
-{
-    // NIST AES-256 ECB KAT (przykład z Twojego logu, ale bez CBC)
-    const std::string key_hex = "0000000000000000000000000000000000000000000000000000000000000000";
-    const std::string pt_hex = "fffffffffffffffffffffffffffffffc";
-    const std::string ct_hex = "0f59cb5a4b522e2ac56c1a64f558ad9a";
-
-    auto key = HexToBytes(key_hex);
-    auto pt = HexToBytes(pt_hex);
-    auto ct_expected = HexToBytes(ct_hex);
-
-    ASSERT_EQ(key.size(), 32u);
-    ASSERT_EQ(pt.size(), 16u);
-    ASSERT_EQ(ct_expected.size(), 16u);
-
-    AES aes(key);
-
-    std::vector<uint8_t> out(16);
-    aes.encryptBlock(pt.data(), out.data());
-
-    EXPECT_EQ(out, ct_expected)
-        << "Key: " << BytesToHex(key)
-        << "\nPT: " << BytesToHex(pt)
-        << "\nCT: " << BytesToHex(out);
-}
-

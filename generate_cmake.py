@@ -80,6 +80,10 @@ def walk_project(root_dir):
 def generate_root_cmake(modules):
     cmake = f"cmake_minimum_required(VERSION 3.15)\n"
     cmake += f"project({PROJECT_NAME})\n\n"
+    cmake += """
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)\n
+    """
 
     # GoogleTest
     cmake += "include(FetchContent)\n"
@@ -141,7 +145,12 @@ def generate_root_cmake(modules):
                     ${{CMAKE_BINARY_DIR}}/tests/nist
         )
         """
-
+    cmake += "add_executable(bench_aes_tdes bench/bench_aes_tdes.cpp)\n"
+    cmake += "target_include_directories(bench_aes_tdes PRIVATE ${CMAKE_SOURCE_DIR}/src)\n"
+    cmake += "target_link_libraries(bench_aes_tdes PRIVATE "
+    cmake += " ".join([m for m, _, _ in modules])
+    cmake += ")\n"
+     
 
     return cmake
 
