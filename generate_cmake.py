@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 
-# Katalogi, których NIE ruszamy
 EXCLUDED = {"out", "build", "include", "external", "scripts","tests"}
 
 PROJECT_NAME = "project-krypto"
@@ -53,7 +52,7 @@ def walk_project(root_dir):
         if any(part in EXCLUDED for part in dirpath.split(os.sep)):
             continue
 
-        # Pomijamy katalog g³ówny
+        # Pomijamy katalog g??wny
         if dirpath == root_dir:
             continue
 
@@ -69,7 +68,7 @@ def walk_project(root_dir):
         module_name = make_unique_module_name(dirpath)
         modules.append((module_name, dirpath, src_files))
 
-        # Generujemy CMakeLists.txt dla modu³u
+        # Generujemy CMakeLists.txt dla modu?u
         cmake_path = os.path.join(dirpath, "CMakeLists.txt")
         with open(cmake_path, "w") as f:
             f.write(generate_module_cmake(module_name, src_files))
@@ -96,7 +95,7 @@ def generate_root_cmake(modules):
     cmake += "enable_testing()\n"
     cmake += "include(GoogleTest)\n\n"
 
-    # Dodajemy modu³y
+    # Dodajemy modu?y
     for module_name, path, _ in modules:
         rel_path = os.path.relpath(path, ".").replace(os.sep, "/")
         cmake += f"add_subdirectory(\"{rel_path}\")\n"
