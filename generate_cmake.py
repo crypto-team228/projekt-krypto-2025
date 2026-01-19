@@ -19,11 +19,10 @@ TDES_SOURCE = "src/TDES_main.cpp"
 TEST_EXECUTABLE = "crypto_tests"
 
 
-
 def generate_module_cmake(module_name, src_files):
     cmake = f"add_library({module_name}\n"
     for src in src_files:
-        cmake += f"    {src.replace(os.sep, '/')}\n"
+        cmake += f" {src}\n"
     cmake += ")\n"
     cmake += (
         f"target_include_directories({module_name} PUBLIC "
@@ -52,13 +51,14 @@ def walk_project(root_dir):
         if any(part in EXCLUDED for part in dirpath.split(os.sep)):
             continue
 
-        # Pomijamy katalog g??wny
+        # Pomijamy katalog glowny
         if dirpath == root_dir:
             continue
 
         # Zbieramy pliki .cpp
         src_files = [
-            f for f in filenames
+            f
+            for f in filenames
             if f.endswith(".cpp") and not f.endswith("_main.cpp") and f != "cli.cpp"
         ]
 
@@ -68,21 +68,40 @@ def walk_project(root_dir):
         module_name = make_unique_module_name(dirpath)
         modules.append((module_name, dirpath, src_files))
 
-        # Generujemy CMakeLists.txt dla modu?u
+        # Generujemy CMakeLists.txt dla modulu
         cmake_path = os.path.join(dirpath, "CMakeLists.txt")
-        with open(cmake_path, "w") as f:
+        with open(cmake_path, "w", encoding="utf-8") as f:
             f.write(generate_module_cmake(module_name, src_files))
 
     return modules
 
 
 def generate_root_cmake(modules):
-    cmake = f"cmake_minimum_required(VERSION 3.15)\n"
+    cmake = "cmake_minimum_required(VERSION 3.15)\n"
     cmake += f"project({PROJECT_NAME})\n\n"
     cmake += """
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)\n
-    """
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(OPENSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/OpenSSL)
+set(CRYPTOPP_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/cryptopp890)
+set(LIBSODIUM_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/libsodium)
+
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external
+
+    ${OPENSSL_ROOT_DIR}/include
+    ${CRYPTOPP_ROOT_DIR}
+    ${LIBSODIUM_ROOT_DIR}/include
+)
+
+link_directories(
+    ${OPENSSL_ROOT_DIR}/lib
+    ${CRYPTOPP_ROOT_DIR}/x64/Output/Release
+    ${LIBSODIUM_ROOT_DIR}/x64/Release/v143/static
+)
+"""
 
     # GoogleTest
     cmake += "include(FetchContent)\n"
@@ -95,7 +114,7 @@ def generate_root_cmake(modules):
     cmake += "enable_testing()\n"
     cmake += "include(GoogleTest)\n\n"
 
-    # Dodajemy modu?y
+    # Dodajemy moduly
     for module_name, path, _ in modules:
         rel_path = os.path.relpath(path, ".").replace(os.sep, "/")
         cmake += f"add_subdirectory(\"{rel_path}\")\n"
@@ -119,37 +138,36 @@ def generate_root_cmake(modules):
         cmake += f"    {src}\n"
     cmake += ")\n"
 
-    cmake += f"target_link_libraries({TEST_EXECUTABLE} PRIVATE " 
-    cmake += " ".join([m for m, _, _ in modules]) 
-    cmake += " gtest gtest_main)\n" 
-    
-    cmake += f"target_include_directories({TEST_EXECUTABLE} PRIVATE "
+    cmake += "target_link_libraries(" + TEST_EXECUTABLE + " PRIVATE "
+    cmake += " ".join([m for m, _, _ in modules])
+    cmake += " gtest gtest_main)\n"
+
+    cmake += "target_include_directories(" + TEST_EXECUTABLE + " PRIVATE "
     cmake += "${googletest_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include)\n"
 
+    cmake += f"gtest_discover_tests({TEST_EXECUTABLE})\n"
+    cmake += """
+add_custom_command(
+    TARGET """ + TEST_EXECUTABLE + """ POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/tests/data
+            ${CMAKE_BINARY_DIR}/tests/data
+)
 
+add_custom_command(
+    TARGET """ + TEST_EXECUTABLE + """ POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/tests/nist
+            ${CMAKE_BINARY_DIR}/tests/nist
+)
+"""
 
-    cmake += f"gtest_discover_tests({TEST_EXECUTABLE})\n" 
-    cmake += f"""
-        add_custom_command(
-            TARGET {TEST_EXECUTABLE} POST_BUILD
-            COMMAND ${{CMAKE_COMMAND}} -E copy_directory
-                    ${{CMAKE_SOURCE_DIR}}/tests/data
-                    ${{CMAKE_BINARY_DIR}}/tests/data
-        )
-
-        add_custom_command(
-            TARGET {TEST_EXECUTABLE} POST_BUILD
-            COMMAND ${{CMAKE_COMMAND}} -E copy_directory
-                    ${{CMAKE_SOURCE_DIR}}/tests/nist
-                    ${{CMAKE_BINARY_DIR}}/tests/nist
-        )
-        """
+    # Benchmark
     cmake += "add_executable(bench_aes_tdes bench/bench_aes_tdes.cpp)\n"
     cmake += "target_include_directories(bench_aes_tdes PRIVATE ${CMAKE_SOURCE_DIR}/src)\n"
     cmake += "target_link_libraries(bench_aes_tdes PRIVATE "
     cmake += " ".join([m for m, _, _ in modules])
-    cmake += ")\n"
-     
+    cmake += " crypto libcrypto libssl cryptopp libsodium)\n"
 
     return cmake
 

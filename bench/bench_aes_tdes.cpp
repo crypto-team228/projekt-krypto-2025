@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <type_traits>
 
 #include "cipher/AES/aes.hpp"
 #include "cipher/TDES/tdes.hpp"
@@ -46,8 +47,8 @@ BenchResult bench_mode(const std::string& algo,
     if constexpr (std::is_same_v<Mode, GCM>) {
         mode.setIV(iv);
     }
-	else if constexpr (!std::is_same_v<Mode, ECB>){
-
+    else if constexpr (!std::is_same_v<Mode, ECB>) {
+        mode.setIV(iv);
     }
 
     std::vector<uint8_t> pt(size);
