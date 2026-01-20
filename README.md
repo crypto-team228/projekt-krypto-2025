@@ -169,6 +169,87 @@ cmake --build build --target crypto_tests
 ./build/crypto_tests
 ```
 
+## Benchmarki
+
+Projekt zawiera narzędzie do pomiaru wydajności algorytmów szyfrowania.
+
+### Kompilacja benchmarków
+
+```bash
+cmake --build build --target crypto_bench
+```
+
+### Użycie
+
+```bash
+./build/bench/crypto_bench [OPCJE]
+```
+
+### Opcje
+
+| Opcja | Opis |
+|-------|------|
+| `--iters <N>` | Liczba iteracji dla każdego testu (domyślnie: 100) |
+| `--output <plik>` | Ścieżka do pliku wynikowego CSV (domyślnie: `bench_results.csv`) |
+
+### Przykłady
+
+```bash
+# Uruchomienie z domyślnymi ustawieniami (100 iteracji)
+./build/bench/crypto_bench
+
+# Szybki test z 10 iteracjami
+./build/bench/crypto_bench --iters 10
+
+# Zapis wyników do własnego pliku
+./build/bench/crypto_bench --iters 50 --output wyniki.csv
+```
+
+### Testowane konfiguracje
+
+| Algorytm | Tryby | Rozmiar klucza | Rozmiar IV |
+|----------|-------|----------------|------------|
+| AES-128 | ECB, CBC, CTR, GCM | 16 bajtów | 16 bajtów |
+| AES-256 | ECB, CBC, CTR, GCM | 32 bajty | 16 bajtów |
+| TDES | ECB | 24 bajty | - |
+
+### Rozmiary danych testowych
+
+Benchmark mierzy wydajność dla następujących rozmiarów danych:
+- 1 KB (1024 B)
+- 4 KB (4096 B)
+- 16 KB (16384 B)
+- 64 KB (65536 B)
+- 256 KB (262144 B)
+
+### Format wyjścia
+
+Wyniki zapisywane są w formacie CSV z następującymi kolumnami:
+
+| Kolumna | Opis |
+|---------|------|
+| `algo` | Nazwa algorytmu (AES-128, AES-256, TDES) |
+| `mode` | Tryb operacji (ECB, CBC, CTR, GCM) |
+| `size_bytes` | Rozmiar danych testowych w bajtach |
+| `throughput_MBps` | Przepustowość w MB/s |
+| `latency_usec` | Opóźnienie na operację w mikrosekundach |
+
+### Przykładowe wyjście konsoli
+
+```
+[*] Starting benchmarks (iters=100)...
+[*] AES-128 ECB size=1024
+[*] AES-128 CBC size=1024
+...
+
+=== Summary ===
+Algorithm   Mode  Size        Throughput    Latency
+------------------------------------------------------
+AES-128     ECB   1024        5.50       MB/s177.45     us
+AES-128     CBC   1024        4.80       MB/s203.33     us
+...
+```
+
 ## Uwagi bezpieczeństwa
 
 **UWAGA**: Ta implementacja jest przeznaczona wyłącznie do celów edukacyjnych. Nie należy jej używać w środowisku produkcyjnym bez dokładnej weryfikacji i audytu bezpieczeństwa.
