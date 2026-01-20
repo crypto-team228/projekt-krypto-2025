@@ -3,12 +3,13 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <algorithm>
 
 #include "cipher/AES/aes.hpp"
 #include "mode/mode.hpp"
-#include "mode/ecb.hpp"
-#include "mode/ctr.hpp"
-#include "mode/cbc.hpp"
+#include "mode/ECB.hpp"
+#include "mode/CTR.hpp"
+#include "mode/CBC.hpp"
 
 std::vector<std::vector<uint8_t>> split_to_128bit_blocks(const std::string& text)
 {
