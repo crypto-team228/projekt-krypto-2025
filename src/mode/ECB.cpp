@@ -1,29 +1,47 @@
 #include "mode/ECB.hpp"
 #include <stdexcept>
+#include <iostream>
 
 std::vector<uint8_t> ECB::encrypt(const std::vector<uint8_t>& data, Cipher& cipher)
 {
     std::vector<uint8_t> out = data;
-    const size_t blockSize = cipher.blockSize();
-    applyPadding(out, blockSize);
+    const size_t B = cipher.blockSize();
+    const size_t N = cipher.batchSize();
 
-    for (size_t i = 0; i < out.size(); i += blockSize)
-        cipher.encryptBlock(&out[i], &out[i]);
+    applyPadding(out, B);
+
+    size_t blocks = out.size() / B;
+    size_t i = 0;
+
+    while (i < blocks) {
+		std::cout << "Encrypting block chunk starting at block " << i << "\n";
+        size_t chunk = std::min(N, blocks - i);
+        cipher.encryptBlocks(&out[i * B], &out[i * B], chunk);
+        i += chunk;
+    }
 
     return out;
 }
 
 std::vector<uint8_t> ECB::decrypt(const std::vector<uint8_t>& data, Cipher& cipher)
 {
-    const size_t blockSize = cipher.blockSize();
-    if (data.size() % blockSize != 0)
+    const size_t B = cipher.blockSize();
+    const size_t N = cipher.batchSize();
+
+    if (data.size() % B != 0)
         throw std::runtime_error("ECB decrypt: invalid ciphertext size");
 
     std::vector<uint8_t> out = data;
+    size_t blocks = out.size() / B;
+    size_t i = 0;
 
-    for (size_t i = 0; i < out.size(); i += blockSize)
-        cipher.decryptBlock(&out[i], &out[i]);
+    while (i < blocks) {
+        size_t chunk = std::min(N, blocks - i);
+        cipher.decryptBlocks(&out[i * B], &out[i * B], chunk);
+        i += chunk;
+    }
 
-    removePadding(out, blockSize);
+    removePadding(out, B);
     return out;
 }
+

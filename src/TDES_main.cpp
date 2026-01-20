@@ -1,6 +1,7 @@
 #include <iostream>
 #include "utils/DataConverter.hpp"
 #include "cipher/TDES/tdes.hpp"
+#include "cipher/TDES/tdes_Bitslice_AVX2.hpp"
 #include "cipher/AES/aes.hpp"
 #include "mode/mode.hpp"
 #include "mode/ECB.hpp"
@@ -9,6 +10,9 @@
 
 
 int main() {
+
+	std::cout << "TDES Bitslice AVX2 Test\n";
+
 
 	std::string text = "0123456789ABCDEF0123456789ABCDEF";
 	std::vector<uint8_t> plaintext = DataConverter::HexToBytes(text);
@@ -19,6 +23,7 @@ int main() {
 	TDES tdes(keyBytes);
 
 	ECB ecb;
+	ecb.setPadding(PaddingMode::None);
 	auto test = ecb.encrypt(plaintext, tdes);
 	std::cout << "Encrypted: ";
 	for (auto b : test) {
@@ -29,23 +34,20 @@ int main() {
 	std::cout << "Expected : " << expectedEncrypted << std::endl;
 
 
-	text = "fffffffffffffffffffffffffffffffc";
+	text = "0123456789ABCDEF";
 	plaintext = DataConverter::HexToBytes(text);
-	keyBytes = DataConverter::HexToBytes("0000000000000000000000000000000000000000000000000000000000000000");
-	expectedEncrypted = "0f59cb5a4b522e2ac56c1a64f558ad9a";
-	IV = DataConverter::HexToBytes("00000000000000000000000000000000");
+	keyBytes = DataConverter::HexToBytes("033457799BBCDFF1133457799BBCDFF1233457799BBCDFF1");
+	expectedEncrypted = "37d174403fc04f1a";
 
-	CBC cbc;
-	AES aes(keyBytes);
-	cbc.setPadding(PaddingMode::None);
-	cbc.setIV(IV);
-
-	test = cbc.encrypt(plaintext, aes);
+	
+	TDES_Bitslice_AVX2 tdes_bi_avx2(keyBytes);
+	ECB ecb_bi;
+	ecb_bi.setPadding(PaddingMode::None);
+	auto test_bi = ecb_bi.encrypt(plaintext, tdes_bi_avx2);
 	std::cout << "Encrypted: ";
-	for (auto b : test) {
+	for (auto b : test_bi) {
 		std::cout << std::hex << (int)b;
 	}
-
 	std::cout << std::endl;
 	std::cout << "Expected : " << expectedEncrypted << std::endl;
 

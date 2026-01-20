@@ -12,8 +12,7 @@ protected:
     void applyPadding(std::vector<uint8_t>& data, size_t blockSize) const;
     void removePadding(std::vector<uint8_t>& data, size_t blockSize) const;
 
-    static void xorBlock(std::array<uint8_t, 16>& a,
-        const std::array<uint8_t, 16>& b);
+    static void xorBlock(uint8_t* a, const uint8_t* b, size_t n);
 
 protected:
     PaddingMode padding = PaddingMode::PKCS7;

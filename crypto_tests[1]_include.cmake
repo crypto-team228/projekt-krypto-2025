@@ -1,0 +1,5 @@
+if(EXISTS "C:/Projects/repos/projekt-krypto-2025/crypto_tests[1]_tests.cmake")
+  include("C:/Projects/repos/projekt-krypto-2025/crypto_tests[1]_tests.cmake")
+else()
+  add_test(crypto_tests_NOT_BUILT crypto_tests_NOT_BUILT)
+endif()

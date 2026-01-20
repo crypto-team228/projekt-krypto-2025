@@ -1,6 +1,6 @@
 #pragma once
 #include "cipher_adapter.hpp"
-#include <openssl/include/openssl/evp.h>
+#include <openssl/evp.h>
 
 class OpenSSL_AES128_ECB_Adapter : public CipherAdapter {
 public:

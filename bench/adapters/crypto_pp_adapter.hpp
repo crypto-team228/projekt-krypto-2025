@@ -1,8 +1,8 @@
 #pragma once
 #include "cipher_adapter.hpp"
-#include <cryptopp890/aes.h>
-#include <cryptopp890/modes.h>
-#include <cryptopp890/filters.h>
+#include <aes.h>
+#include <modes.h>
+#include <filters.h>
 
 class CryptoPP_AES128_ECB_Adapter : public CipherAdapter {
 public:

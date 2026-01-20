@@ -8,10 +8,16 @@
 
 #include "cipher/AES/aes.hpp"
 #include "cipher/TDES/tdes.hpp"
+#include "cipher/TDES/tdes_b.hpp"
+#include "cipher/TDES/tdes_bitslice_avx2.hpp"
 #include "mode/ECB.hpp"
 #include "mode/CBC.hpp"
 #include "mode/CTR.hpp"
 #include "mode/GCM.hpp"
+#include "adapters/crypto_pp_adapter.hpp"
+#include "adapters/openssl_adapter.hpp"
+#include "adapters/libsodium_adapter.hpp"
+
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -38,8 +44,8 @@ BenchResult bench_mode(const std::string& algo,
     Mode mode;
     const size_t blockSize = cipher.blockSize();
 
-    std::vector<uint8_t> key(cipher.blockSize());
-    std::vector<uint8_t> iv(blockSize);
+    std::vector<uint8_t> key(blockSize);
+    std::vector<uint8_t> iv(16);
     fillPattern(key, 0x11);
     fillPattern(iv, 0x22);
 
@@ -79,7 +85,7 @@ int main(int argc, char** argv)
         outFile = argv[2];
     }
 
-    std::vector<size_t> sizes = { 1024, 4096, 16384, 65536, 1048576 };
+    std::vector<size_t> sizes = { 256, 512, 1024};
     size_t iters = 1000;
 
     std::vector<BenchResult> results;
@@ -87,20 +93,37 @@ int main(int argc, char** argv)
     AES aes128(std::vector<uint8_t>(16, 0x00));
     AES aes256(std::vector<uint8_t>(32, 0x00));
     TDES tdes(std::vector<uint8_t>(24, 0x00)); // 3×8 bajtów
+	TDES_B tdes_b(std::vector<uint8_t>(24, 0x00));
+    TDES_Bitslice_AVX2 tdes_bi_avx2(std::vector<uint8_t>(24, 0x00));
+
+	OpenSSL_AES128_ECB_Adapter openssl_aes128_ecb;
+	openssl_aes128_ecb.setKey(std::vector<uint8_t>(16, 0x00));
+
 
     for (auto size : sizes) {
+		std::cout << "[*] Benchmarking size: " << size << " bytes\n";
+		std::cout << "    AES-128...\n";
         results.push_back(bench_mode<ECB>("AES-128", "ECB", aes128, size, iters));
         results.push_back(bench_mode<CBC>("AES-128", "CBC", aes128, size, iters));
         results.push_back(bench_mode<CTR>("AES-128", "CTR", aes128, size, iters));
         results.push_back(bench_mode<GCM>("AES-128", "GCM", aes128, size, iters));
 
+		std::cout << "    AES-256...\n";
         results.push_back(bench_mode<ECB>("AES-256", "ECB", aes256, size, iters));
         results.push_back(bench_mode<CBC>("AES-256", "CBC", aes256, size, iters));
         results.push_back(bench_mode<CTR>("AES-256", "CTR", aes256, size, iters));
         results.push_back(bench_mode<GCM>("AES-256", "GCM", aes256, size, iters));
-
+		std::cout << "    TDES...\n";
         results.push_back(bench_mode<ECB>("TDES", "ECB", tdes, size, iters));
         results.push_back(bench_mode<CBC>("TDES", "CBC", tdes, size, iters));
+		std::cout << "    TDES-B...\n";
+		results.push_back(bench_mode<ECB>("TDES-B", "ECB", tdes_b, size, iters));
+		results.push_back(bench_mode<CBC>("TDES-B", "CBC", tdes_b, size, iters));
+		std::cout << "    TDES-Bitslice-AVX2...\n";
+		results.push_back(bench_mode<ECB>("TDES-Bitslice-AVX2", "ECB", tdes_bi_avx2, size, iters));
+		results.push_back(bench_mode<CBC>("TDES-Bitslice-AVX2", "CBC", tdes_bi_avx2, size, iters));
+		std::cout << "    OpenSSL AES-128-ECB...\n";
+		results.push_back(bench_mode<ECB>("OpenSSL-AES-128", "ECB", openssl_aes128_ecb, size, iters));
     }
 
     std::ofstream ofs(outFile);
