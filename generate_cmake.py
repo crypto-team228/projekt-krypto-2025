@@ -91,8 +91,8 @@ def walk_project(root_dir):
 def generate_root_cmake(modules):
     cmake = ""
     cmake += "cmake_minimum_required(VERSION 3.15)\n"
-    cmake += f"project({PROJECT_NAME})\n\n"
-
+    cmake += f"project({PROJECT_NAME})\n"
+    cmake += f"set(CMAKE_MSVC_RUNTIME_LIBRARY \"MultiThreaded$<$<CONFIG:Debug>:Debug>\")\n\n"
     cmake += "set(CMAKE_CXX_STANDARD 17)\n"
     cmake += "set(CMAKE_CXX_STANDARD_REQUIRED ON)\n\n"
 

@@ -14,7 +14,6 @@ std::vector<uint8_t> ECB::encrypt(const std::vector<uint8_t>& data, Cipher& ciph
     size_t i = 0;
 
     while (i < blocks) {
-		std::cout << "Encrypting block chunk starting at block " << i << "\n";
         size_t chunk = std::min(N, blocks - i);
         cipher.encryptBlocks(&out[i * B], &out[i * B], chunk);
         i += chunk;

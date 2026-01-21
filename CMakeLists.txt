@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(project-krypto)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,7 +21,7 @@ find_package(OpenSSL REQUIRED)
 
 add_library(CryptoPP STATIC IMPORTED)
 set_target_properties(CryptoPP PROPERTIES
-    IMPORTED_LOCATION "${CRYPTOPP_ROOT_DIR}/x64/Output/Release/cryptlib.lib"
+    IMPORTED_LOCATION "${CRYPTOPP_ROOT_DIR}/x64/Output/Debug/cryptlib.lib"
     INTERFACE_INCLUDE_DIRECTORIES "${CRYPTOPP_ROOT_DIR}"
 )
 

@@ -1,0 +1,1003 @@
+﻿  Creating Win32/Debug cryptest.exe for MAC computation
+  Wersja programu MSBuild 18.3.0-preview-25570-20+708535641 dla .NET Framework
+  Kompilacja rozpocz─Ö┼éa si─Ö 21.01.2026 15:46:28.
+  
+  Projekt ÔÇ×C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxprojÔÇŁ w w─Ö┼║le 1 (elementy docelowe: Build).
+  PrepareForBuild:
+    Tworzenie katalogu ÔÇ×Win32\cryptlib\Debug\ÔÇŁ.
+    Dane wyj┼Ťciowe ze struktur─ů s─ů w┼é─ůczone. Formatowanie diagnostyki kompilatora b─Ödzie odzwierciedla─ç hierarchi─Ö b┼é─Öd├│w. Aby uzyska─ç wi─Öcej informacji, zobacz https://aka.ms/cpp/structured-output.
+    Tworzenie katalogu ÔÇ×Win32\Output\Debug\ÔÇŁ.
+    Tworzenie katalogu ÔÇ×Win32\cryptlib\Debug\cryptlib.tlog\ÔÇŁ.
+  InitializeBuildStatus:
+    Trwa tworzenie ÔÇ×Win32\cryptlib\Debug\cryptlib.tlog\unsuccessfulbuildÔÇŁ, poniewa┼╝ okre┼Ťlono "AlwaysCreate".
+    Modyfikowanie ÔÇ×Win32\cryptlib\Debug\cryptlib.tlog\unsuccessfulbuildÔÇŁ.
+  CustomBuild:
+    Performing Custom Build Tools
+    Building and assembling rdrand.asm
+     Assembling: C:\Users\Micha?\Downloads\cryptopp890\rdrand.asm
+    Building and assembling rdseed.asm
+     Assembling: C:\Users\Micha?\Downloads\cryptopp890\rdseed.asm
+  ClCompile:
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\CL.exe /c /Zi /nologo /W4 /WX- /diagnostics:column /Od /Oi /Oy- /D USE_PRECOMPILED_HEADERS /Gm- /EHsc /RTC1 /MTd /GS /arch:SSE2 /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yc"pch.h" /Fp"Win32\cryptlib\Debug\cryptlib.pch" /Fo"Win32\cryptlib\Debug\\" /Fd"Win32\Output\Debug\cryptlib.pdb" /external:W4 /Gd /TP /wd4231 /wd4251 /wd4275 /wd4355 /wd4505 /analyze- /FC /errorReport:none pch.cpp
+    pch.cpp
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\CL.exe /c /Zi /nologo /W4 /WX- /diagnostics:column /Od /Oi /Oy- /D USE_PRECOMPILED_HEADERS /Gm- /EHsc /RTC1 /MTd /GS /arch:SSE2 /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"pch.h" /Fp"Win32\cryptlib\Debug\cryptlib.pch" /Fo"Win32\cryptlib\Debug\\" /Fd"Win32\Output\Debug\cryptlib.pdb" /external:W4 /Gd /TP /wd4231 /wd4251 /wd4275 /wd4355 /wd4505 /analyze- /FC /errorReport:none cryptlib.cpp cpu.cpp integer.cpp 3way.cpp adler32.cpp algebra.cpp algparam.cpp allocate.cpp arc4.cpp aria.cpp ariatab.cpp asn.cpp authenc.cpp base32.cpp base64.cpp basecode.cpp bfinit.cpp blake2.cpp blake2s_simd.cpp blake2b_simd.cpp blowfish.cpp blumshub.cpp camellia.cpp cast.cpp casts.cpp cbcmac.cpp ccm.cpp chacha.cpp chacha_simd.cpp chachapoly.cpp cham.cpp cham_simd.cpp channels.cpp cmac.cpp crc.cpp crc_simd.cpp darn.cpp default.cpp des.cpp dessp.cpp dh.cpp dh2.cpp donna_32.cpp donna_64.cpp donna_sse.cpp dsa.cpp eax.cpp ec2n.cpp ecp.cpp elgamal.cpp emsa2.cpp esign.cpp files.cpp filters.cpp fips140.cpp fipstest.cpp gcm.cpp gcm_simd.cpp gf256.cpp gf2_32.cpp gf2n.cpp gf2n_simd.cpp gfpcrypt.cpp gost.cpp gzip.cpp hc128.cpp hc256.cpp hex.cpp hight.cpp hmac.cpp hrtimer.cpp ida.cpp idea.cpp kalyna.cpp kalynatab.cpp keccak.cpp keccak_core.cpp keccak_simd.cpp lea.cpp lea_simd.cpp lsh256.cpp lsh256_sse.cpp lsh256_avx.cpp lsh512.cpp lsh512_sse.cpp lsh512_avx.cpp luc.cpp mars.cpp marss.cpp md2.cpp md4.cpp md5.cpp misc.cpp modes.cpp mqueue.cpp mqv.cpp nbtheory.cpp oaep.cpp osrng.cpp padlkrng.cpp panama.cpp pkcspad.cpp poly1305.cpp polynomi.cpp primetab.cpp pssr.cpp pubkey.cpp queue.cpp rabin.cpp randpool.cpp rabbit.cpp rc2.cpp rc5.cpp rc6.cpp rdrand.cpp rdtables.cpp rijndael.cpp rijndael_simd.cpp ripemd.cpp rng.cpp rsa.cpp rw.cpp safer.cpp salsa.cpp scrypt.cpp seal.cpp seed.cpp serpent.cpp sha.cpp sha_simd.cpp sha3.cpp shacal2.cpp shacal2_simd.cpp shake.cpp shark.cpp sharkbox.cpp simeck.cpp simon.cpp simon128_simd.cpp simple.cpp skipjack.cpp sm3.cpp sm4.cpp sm4_simd.cpp sosemanuk.cpp speck.cpp speck128_simd.cpp square.cpp squaretb.cpp sse_simd.cpp strciphr.cpp tea.cpp tftables.cpp threefish.cpp tiger.cpp tigertab.cpp ttmac.cpp tweetnacl.cpp twofish.cpp vmac.cpp wake.cpp whrlpool.cpp xed25519.cpp xtr.cpp xtrcrypt.cpp xts.cpp zdeflate.cpp zinflate.cpp zlib.cpp
+    cryptlib.cpp
+    cpu.cpp
+    integer.cpp
+C:\Users\Micha┼é\Downloads\cryptopp890\integer.cpp(3061,12): warning C4996: 'stdext::make_checked_array_iterator': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Users\Micha┼é\Downloads\cryptopp890\integer.cpp(3060,8):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×_OutIt std::reverse_copy<const CryptoPP::byte*,stdext::checked_array_iterator<unsigned char *>>(_BidIt,_BidIt,_OutIt)ÔÇŁ funkcji szablon
+            with
+            [
+                _OutIt=stdext::checked_array_iterator<unsigned char *>,
+                _BidIt=const CryptoPP::byte *
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(5626,31):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×decltype(auto) std::_Get_unwrapped_n<_OutIt&,int>(_Iter,const _Diff)ÔÇŁ funkcji szablon
+            with
+            [
+                _OutIt=stdext::checked_array_iterator<unsigned char *>,
+                _Iter=stdext::checked_array_iterator<unsigned char *> &,
+                _Diff=int
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1512,26):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Unwrappable_for_offset_v<stdext::checked_array_iterator<unsigned char *> &>ÔÇŁ
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1506,44):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Unwrappable_v<stdext::checked_array_iterator<unsigned char *> &,void>ÔÇŁ
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1435,5):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Allow_inheriting_unwrap_v<stdext::checked_array_iterator<unsigned char *>,void>ÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,22): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Prevent_inheriting_unwrap': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1502,93):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::_Iter_diff_t<_Iter>ÔÇŁ klasy alias szablon
+            with
+            [
+                _Iter=stdext::checked_array_iterator<unsigned char *>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1311,55):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::iterator_traits<_Iter>ÔÇŁ klasy klasa szablon
+            with
+            [
+                _Iter=stdext::checked_array_iterator<unsigned char *>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(496,26):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::_Iterator_traits_base<_Iter,void>ÔÇŁ klasy klasa szablon
+            with
+            [
+                _Iter=stdext::checked_array_iterator<unsigned char *>
+            ]
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::iterator_category': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::value_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::difference_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::pointer': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::checked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::reference': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1523,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Verify_offset': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1524,42): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Seek_to': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/integer.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Users\Micha┼é\Downloads\cryptopp890\integer.cpp(3060,8):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×_OutIt std::reverse_copy<const CryptoPP::byte*,stdext::checked_array_iterator<unsigned char *>>(_BidIt,_BidIt,_OutIt)ÔÇŁ funkcji szablon
+            with
+            [
+                _OutIt=stdext::checked_array_iterator<unsigned char *>,
+                _BidIt=const CryptoPP::byte *
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(5654,10):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×void std::_Seek_wrapped<_OutIt,_Ptr&>(_Iter &,_UIter)ÔÇŁ funkcji szablon
+            with
+            [
+                _OutIt=stdext::checked_array_iterator<unsigned char *>,
+                _Ptr=unsigned char *,
+                _Iter=stdext::checked_array_iterator<unsigned char *>,
+                _UIter=unsigned char *&
+            ]
+    
+    3way.cpp
+    adler32.cpp
+    algebra.cpp
+    algparam.cpp
+    allocate.cpp
+    arc4.cpp
+    aria.cpp
+    ariatab.cpp
+    asn.cpp
+    authenc.cpp
+    base32.cpp
+    base64.cpp
+    basecode.cpp
+    bfinit.cpp
+    blake2.cpp
+    blake2s_simd.cpp
+    blake2b_simd.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    blowfish.cpp
+    blumshub.cpp
+    camellia.cpp
+    cast.cpp
+    casts.cpp
+    cbcmac.cpp
+    ccm.cpp
+    chacha.cpp
+    chacha_simd.cpp
+    chachapoly.cpp
+    cham.cpp
+    cham_simd.cpp
+    channels.cpp
+    cmac.cpp
+    crc.cpp
+    crc_simd.cpp
+    darn.cpp
+    default.cpp
+    des.cpp
+    dessp.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    dh.cpp
+    dh2.cpp
+    donna_32.cpp
+    donna_64.cpp
+    donna_sse.cpp
+    dsa.cpp
+    eax.cpp
+    ec2n.cpp
+    ecp.cpp
+    elgamal.cpp
+    emsa2.cpp
+    esign.cpp
+    files.cpp
+    filters.cpp
+    fips140.cpp
+    fipstest.cpp
+    gcm.cpp
+    gcm_simd.cpp
+    gf256.cpp
+    gf2_32.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    gf2n.cpp
+    gf2n_simd.cpp
+    gfpcrypt.cpp
+    gost.cpp
+    gzip.cpp
+    hc128.cpp
+    hc256.cpp
+    hex.cpp
+    hight.cpp
+    hmac.cpp
+    hrtimer.cpp
+    ida.cpp
+    idea.cpp
+    kalyna.cpp
+    kalynatab.cpp
+    keccak.cpp
+    keccak_core.cpp
+    keccak_simd.cpp
+    lea.cpp
+    lea_simd.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    lsh256.cpp
+    lsh256_sse.cpp
+    lsh256_avx.cpp
+    lsh512.cpp
+    lsh512_sse.cpp
+    lsh512_avx.cpp
+    luc.cpp
+    mars.cpp
+    marss.cpp
+    md2.cpp
+    md4.cpp
+    md5.cpp
+    misc.cpp
+    modes.cpp
+    mqueue.cpp
+    mqv.cpp
+    nbtheory.cpp
+    oaep.cpp
+    osrng.cpp
+    padlkrng.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    panama.cpp
+    pkcspad.cpp
+    poly1305.cpp
+    polynomi.cpp
+    primetab.cpp
+    pssr.cpp
+    pubkey.cpp
+    queue.cpp
+    rabin.cpp
+    randpool.cpp
+    rabbit.cpp
+    rc2.cpp
+    rc5.cpp
+    rc6.cpp
+    rdrand.cpp
+    rdtables.cpp
+    rijndael.cpp
+    rijndael_simd.cpp
+    ripemd.cpp
+    rng.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    rsa.cpp
+    rw.cpp
+    safer.cpp
+    salsa.cpp
+    scrypt.cpp
+    seal.cpp
+    seed.cpp
+    serpent.cpp
+    sha.cpp
+    sha_simd.cpp
+    sha3.cpp
+    shacal2.cpp
+    shacal2_simd.cpp
+    shake.cpp
+    shark.cpp
+    sharkbox.cpp
+    simeck.cpp
+    simon.cpp
+    simon128_simd.cpp
+    simple.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    skipjack.cpp
+    sm3.cpp
+    sm4.cpp
+    sm4_simd.cpp
+    sosemanuk.cpp
+    speck.cpp
+    speck128_simd.cpp
+    square.cpp
+    squaretb.cpp
+    sse_simd.cpp
+    strciphr.cpp
+    tea.cpp
+    tftables.cpp
+    threefish.cpp
+    tiger.cpp
+    tigertab.cpp
+    ttmac.cpp
+    tweetnacl.cpp
+    twofish.cpp
+    vmac.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    wake.cpp
+    whrlpool.cpp
+    xed25519.cpp
+    xtr.cpp
+    xtrcrypt.cpp
+    xts.cpp
+    zdeflate.cpp
+C:\Users\Micha┼é\Downloads\cryptopp890\zdeflate.cpp(422,155): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::operator -': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Users\Micha┼é\Downloads\cryptopp890\zdeflate.cpp(419,10):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::pair<stdext::unchecked_array_iterator<const CryptoPP::byte *>,stdext::unchecked_array_iterator<const CryptoPP::byte *>> std::mismatch<stdext::unchecked_array_iterator<const CryptoPP::byte *>,stdext::unchecked_array_iterator<const CryptoPP::byte *>>(const _InIt1,const _InIt1,const _InIt2)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _InIt2=stdext::unchecked_array_iterator<const CryptoPP::byte *>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(922,17):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::pair<stdext::unchecked_array_iterator<const CryptoPP::byte *>,stdext::unchecked_array_iterator<const CryptoPP::byte *>> std::mismatch<_InIt1,_InIt2,std::equal_to<void>>(_InIt1,const _InIt1,_InIt2,_Pr)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _InIt2=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Pr=std::equal_to<void>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(883,31):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×decltype(auto) std::_Get_unwrapped<_InIt1&>(_Iter) noexcept(<expr>)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Iter=stdext::unchecked_array_iterator<const CryptoPP::byte *> &
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1445,15):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Unwrappable_v<stdext::unchecked_array_iterator<unsigned char const *> &,void>ÔÇŁ
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1435,5):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Allow_inheriting_unwrap_v<stdext::unchecked_array_iterator<unsigned char const *>,void>ÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,22): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Prevent_inheriting_unwrap': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1450,42): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1450,42):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(883,31):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×_Ptr std::_Get_unwrapped<_InIt1&>(_Iter) noexceptÔÇŁ funkcji szablon
+            with
+            [
+                _Ptr=const CryptoPP::byte *,
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Iter=stdext::unchecked_array_iterator<const CryptoPP::byte *> &
+            ]
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1450,52): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(884,45):
+        podczas obliczania funkcji constexpr ÔÇ×std::_Get_unwrappedÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(885,62):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×auto std::_Idl_distance<_InIt1,_Ptr>(const _Iter &,const _Iter &)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Ptr=const CryptoPP::byte *,
+                _Iter=const CryptoPP::byte *
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1621,28):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::_Iter_diff_t<_Checked>ÔÇŁ klasy alias szablon
+            with
+            [
+                _Checked=stdext::unchecked_array_iterator<const CryptoPP::byte *>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1311,55):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::iterator_traits<_Checked>ÔÇŁ klasy klasa szablon
+            with
+            [
+                _Checked=stdext::unchecked_array_iterator<const CryptoPP::byte *>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(496,26):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::_Iterator_traits_base<_Iter,void>ÔÇŁ klasy klasa szablon
+            with
+            [
+                _Iter=stdext::unchecked_array_iterator<const CryptoPP::byte *>
+            ]
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::iterator_category': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::value_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::difference_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::pointer': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::reference': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1464,23): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1715,35):
+        zobacz deklaracj─Ö ÔÇ×stdext::unchecked_array_iteratorÔÇŁ
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1464,23):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(885,31):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×decltype(auto) std::_Get_unwrapped_n<_InIt2&,int>(_Iter,const _Diff)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt2=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Iter=stdext::unchecked_array_iterator<const CryptoPP::byte *> &,
+                _Diff=int
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1525,26):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Unwrappable_for_unverified_v<stdext::unchecked_array_iterator<unsigned char const *> &>ÔÇŁ
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1468,30):
+            zobacz odwo┼éanie do aktualnie kompilowanego szablonu zmiennych ÔÇ×const bool _Do_unwrap_when_unverified_v<stdext::unchecked_array_iterator<unsigned char const *>,bool>ÔÇŁ
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1464,30): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrap_when_unverified': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1527,42): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+    
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Seek_to': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+    (kompilowanie pliku ┼║r├│d┼éowego ÔÇ×/zdeflate.cppÔÇŁ)
+        C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13):
+        kontekst tworzenia wyst─ůpienia szablonu (najpierw najstarszy) to
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(922,17):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×std::pair<stdext::unchecked_array_iterator<const CryptoPP::byte *>,stdext::unchecked_array_iterator<const CryptoPP::byte *>> std::mismatch<_InIt1,_InIt2,std::equal_to<void>>(_InIt1,const _InIt1,_InIt2,_Pr)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt1=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _InIt2=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Pr=std::equal_to<void>
+            ]
+            C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(897,18):
+            zobacz odwo┼éanie do kompilowanego tworzenia wyst─ůpienia ÔÇ×void std::_Seek_wrapped<_InIt2,_Ptr&>(_Iter &,_UIter)ÔÇŁ funkcji szablon
+            with
+            [
+                _InIt2=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _Ptr=const CryptoPP::byte *,
+                _Iter=stdext::unchecked_array_iterator<const CryptoPP::byte *>,
+                _UIter=const unsigned char *&
+            ]
+    
+    zinflate.cpp
+    zlib.cpp
+    Generowanie kodu...
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\CL.exe /c /Zi /nologo /W4 /WX- /diagnostics:column /Od /Oi /Oy- /D USE_PRECOMPILED_HEADERS /Gm- /EHsc /RTC1 /MTd /GS /arch:AVX2 /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"pch.h" /Fp"Win32\cryptlib\Debug\cryptlib.pch" /Fo"Win32\cryptlib\Debug\\" /Fd"Win32\Output\Debug\cryptlib.pdb" /external:W4 /Gd /TP /wd4231 /wd4251 /wd4275 /wd4355 /wd4505 /analyze- /FC /errorReport:none chacha_avx.cpp
+    chacha_avx.cpp
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\CL.exe /c /Zi /nologo /W4 /WX- /diagnostics:column /Od /Oi /Oy- /D USE_PRECOMPILED_HEADERS /Gm- /EHsc /RTC1 /MTd /GS /arch:SSE2 /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Win32\cryptlib\Debug\\" /Fd"Win32\Output\Debug\cryptlib.pdb" /external:W4 /Gd /TP /wd4231 /wd4251 /wd4275 /wd4355 /wd4505 /analyze- /FC /errorReport:none dll.cpp iterhash.cpp
+    dll.cpp
+    iterhash.cpp
+    Generowanie kodu...
+  Lib:
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\Lib.exe /OUT:"Win32\Output\Debug\cryptlib.lib" /NOLOGO /MACHINE:X86 "Win32\cryptlib\Debug\\rdrand-x86.obj"
+    "Win32\cryptlib\Debug\\rdseed-x86.obj"
+    Win32\cryptlib\Debug\cryptlib.obj
+    Win32\cryptlib\Debug\cpu.obj
+    Win32\cryptlib\Debug\integer.obj
+    Win32\cryptlib\Debug\3way.obj
+    Win32\cryptlib\Debug\adler32.obj
+    Win32\cryptlib\Debug\algebra.obj
+    Win32\cryptlib\Debug\algparam.obj
+    Win32\cryptlib\Debug\allocate.obj
+    Win32\cryptlib\Debug\arc4.obj
+    Win32\cryptlib\Debug\aria.obj
+    Win32\cryptlib\Debug\ariatab.obj
+    Win32\cryptlib\Debug\asn.obj
+    Win32\cryptlib\Debug\authenc.obj
+    Win32\cryptlib\Debug\base32.obj
+    Win32\cryptlib\Debug\base64.obj
+    Win32\cryptlib\Debug\basecode.obj
+    Win32\cryptlib\Debug\bfinit.obj
+    Win32\cryptlib\Debug\blake2.obj
+    Win32\cryptlib\Debug\blake2s_simd.obj
+    Win32\cryptlib\Debug\blake2b_simd.obj
+    Win32\cryptlib\Debug\blowfish.obj
+    Win32\cryptlib\Debug\blumshub.obj
+    Win32\cryptlib\Debug\camellia.obj
+    Win32\cryptlib\Debug\cast.obj
+    Win32\cryptlib\Debug\casts.obj
+    Win32\cryptlib\Debug\cbcmac.obj
+    Win32\cryptlib\Debug\ccm.obj
+    Win32\cryptlib\Debug\chacha.obj
+    Win32\cryptlib\Debug\chacha_simd.obj
+    Win32\cryptlib\Debug\chacha_avx.obj
+    Win32\cryptlib\Debug\chachapoly.obj
+    Win32\cryptlib\Debug\cham.obj
+    Win32\cryptlib\Debug\cham_simd.obj
+    Win32\cryptlib\Debug\channels.obj
+    Win32\cryptlib\Debug\cmac.obj
+    Win32\cryptlib\Debug\crc.obj
+    Win32\cryptlib\Debug\crc_simd.obj
+    Win32\cryptlib\Debug\darn.obj
+    Win32\cryptlib\Debug\default.obj
+    Win32\cryptlib\Debug\des.obj
+    Win32\cryptlib\Debug\dessp.obj
+    Win32\cryptlib\Debug\dh.obj
+    Win32\cryptlib\Debug\dh2.obj
+    Win32\cryptlib\Debug\dll.obj
+    Win32\cryptlib\Debug\donna_32.obj
+    Win32\cryptlib\Debug\donna_64.obj
+    Win32\cryptlib\Debug\donna_sse.obj
+    Win32\cryptlib\Debug\dsa.obj
+    Win32\cryptlib\Debug\eax.obj
+    Win32\cryptlib\Debug\ec2n.obj
+    Win32\cryptlib\Debug\ecp.obj
+    Win32\cryptlib\Debug\elgamal.obj
+    Win32\cryptlib\Debug\emsa2.obj
+    Win32\cryptlib\Debug\esign.obj
+    Win32\cryptlib\Debug\files.obj
+    Win32\cryptlib\Debug\filters.obj
+    Win32\cryptlib\Debug\fips140.obj
+    Win32\cryptlib\Debug\fipstest.obj
+    Win32\cryptlib\Debug\gcm.obj
+    Win32\cryptlib\Debug\gcm_simd.obj
+    Win32\cryptlib\Debug\gf256.obj
+    Win32\cryptlib\Debug\gf2_32.obj
+    Win32\cryptlib\Debug\gf2n.obj
+    Win32\cryptlib\Debug\gf2n_simd.obj
+    Win32\cryptlib\Debug\gfpcrypt.obj
+    Win32\cryptlib\Debug\gost.obj
+    Win32\cryptlib\Debug\gzip.obj
+    Win32\cryptlib\Debug\hc128.obj
+    Win32\cryptlib\Debug\hc256.obj
+    Win32\cryptlib\Debug\hex.obj
+    Win32\cryptlib\Debug\hight.obj
+    Win32\cryptlib\Debug\hmac.obj
+    Win32\cryptlib\Debug\hrtimer.obj
+    Win32\cryptlib\Debug\ida.obj
+    Win32\cryptlib\Debug\idea.obj
+    Win32\cryptlib\Debug\iterhash.obj
+    Win32\cryptlib\Debug\kalyna.obj
+    Win32\cryptlib\Debug\kalynatab.obj
+    Win32\cryptlib\Debug\keccak.obj
+    Win32\cryptlib\Debug\keccak_core.obj
+    Win32\cryptlib\Debug\keccak_simd.obj
+    Win32\cryptlib\Debug\lea.obj
+    Win32\cryptlib\Debug\lea_simd.obj
+    Win32\cryptlib\Debug\lsh256.obj
+    Win32\cryptlib\Debug\lsh256_sse.obj
+    Win32\cryptlib\Debug\lsh256_avx.obj
+    Win32\cryptlib\Debug\lsh512.obj
+    Win32\cryptlib\Debug\lsh512_sse.obj
+    Win32\cryptlib\Debug\lsh512_avx.obj
+    Win32\cryptlib\Debug\luc.obj
+    Win32\cryptlib\Debug\mars.obj
+    Win32\cryptlib\Debug\marss.obj
+    Win32\cryptlib\Debug\md2.obj
+    Win32\cryptlib\Debug\md4.obj
+    Win32\cryptlib\Debug\md5.obj
+    Win32\cryptlib\Debug\misc.obj
+    Win32\cryptlib\Debug\modes.obj
+    Win32\cryptlib\Debug\mqueue.obj
+    Win32\cryptlib\Debug\mqv.obj
+    Win32\cryptlib\Debug\nbtheory.obj
+    Win32\cryptlib\Debug\oaep.obj
+    Win32\cryptlib\Debug\osrng.obj
+    Win32\cryptlib\Debug\padlkrng.obj
+    Win32\cryptlib\Debug\panama.obj
+    Win32\cryptlib\Debug\pch.obj
+    Win32\cryptlib\Debug\pkcspad.obj
+    Win32\cryptlib\Debug\poly1305.obj
+    Win32\cryptlib\Debug\polynomi.obj
+    Win32\cryptlib\Debug\primetab.obj
+    Win32\cryptlib\Debug\pssr.obj
+    Win32\cryptlib\Debug\pubkey.obj
+    Win32\cryptlib\Debug\queue.obj
+    Win32\cryptlib\Debug\rabin.obj
+    Win32\cryptlib\Debug\randpool.obj
+    Win32\cryptlib\Debug\rabbit.obj
+    Win32\cryptlib\Debug\rc2.obj
+    Win32\cryptlib\Debug\rc5.obj
+    Win32\cryptlib\Debug\rc6.obj
+    Win32\cryptlib\Debug\rdrand.obj
+    Win32\cryptlib\Debug\rdtables.obj
+    Win32\cryptlib\Debug\rijndael.obj
+    Win32\cryptlib\Debug\rijndael_simd.obj
+    Win32\cryptlib\Debug\ripemd.obj
+    Win32\cryptlib\Debug\rng.obj
+    Win32\cryptlib\Debug\rsa.obj
+    Win32\cryptlib\Debug\rw.obj
+    Win32\cryptlib\Debug\safer.obj
+    Win32\cryptlib\Debug\salsa.obj
+    Win32\cryptlib\Debug\scrypt.obj
+    Win32\cryptlib\Debug\seal.obj
+    Win32\cryptlib\Debug\seed.obj
+    Win32\cryptlib\Debug\serpent.obj
+    Win32\cryptlib\Debug\sha.obj
+    Win32\cryptlib\Debug\sha_simd.obj
+    Win32\cryptlib\Debug\sha3.obj
+    Win32\cryptlib\Debug\shacal2.obj
+    Win32\cryptlib\Debug\shacal2_simd.obj
+    Win32\cryptlib\Debug\shake.obj
+    Win32\cryptlib\Debug\shark.obj
+    Win32\cryptlib\Debug\sharkbox.obj
+    Win32\cryptlib\Debug\simeck.obj
+    Win32\cryptlib\Debug\simon.obj
+    Win32\cryptlib\Debug\simon128_simd.obj
+    Win32\cryptlib\Debug\simple.obj
+    Win32\cryptlib\Debug\skipjack.obj
+    Win32\cryptlib\Debug\sm3.obj
+    Win32\cryptlib\Debug\sm4.obj
+    Win32\cryptlib\Debug\sm4_simd.obj
+    Win32\cryptlib\Debug\sosemanuk.obj
+    Win32\cryptlib\Debug\speck.obj
+    Win32\cryptlib\Debug\speck128_simd.obj
+    Win32\cryptlib\Debug\square.obj
+    Win32\cryptlib\Debug\squaretb.obj
+    Win32\cryptlib\Debug\sse_simd.obj
+    Win32\cryptlib\Debug\strciphr.obj
+    Win32\cryptlib\Debug\tea.obj
+    Win32\cryptlib\Debug\tftables.obj
+    Win32\cryptlib\Debug\threefish.obj
+    Win32\cryptlib\Debug\tiger.obj
+    Win32\cryptlib\Debug\tigertab.obj
+    Win32\cryptlib\Debug\ttmac.obj
+    Win32\cryptlib\Debug\tweetnacl.obj
+    Win32\cryptlib\Debug\twofish.obj
+    Win32\cryptlib\Debug\vmac.obj
+    Win32\cryptlib\Debug\wake.obj
+    Win32\cryptlib\Debug\whrlpool.obj
+    Win32\cryptlib\Debug\xed25519.obj
+    Win32\cryptlib\Debug\xtr.obj
+    Win32\cryptlib\Debug\xtrcrypt.obj
+    Win32\cryptlib\Debug\xts.obj
+    Win32\cryptlib\Debug\zdeflate.obj
+    Win32\cryptlib\Debug\zinflate.obj
+    Win32\cryptlib\Debug\zlib.obj
+    cryptlib.vcxproj -> C:\Users\Micha┼é\Downloads\cryptopp890\Win32\Output\Debug\cryptlib.lib
+  FinalizeBuildStatus:
+    Usuwanie pliku ÔÇ×Win32\cryptlib\Debug\cryptlib.tlog\unsuccessfulbuildÔÇŁ.
+    Modyfikowanie ÔÇ×Win32\cryptlib\Debug\cryptlib.tlog\cryptlib.lastbuildstateÔÇŁ.
+  Kompilowanie projektu ÔÇ×C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxprojÔÇŁ wykonane (elementy docelowe: Build).
+  
+  Kompilacja powiod┼éa si─Ö.
+  
+  ÔÇ×C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxprojÔÇŁ (element docelowy Build) (1) ->
+  (element docelowy ClCompile) -> 
+C:\Users\Micha┼é\Downloads\cryptopp890\integer.cpp(3061,12): warning C4996: 'stdext::make_checked_array_iterator': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,22): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Prevent_inheriting_unwrap': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::iterator_category': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::value_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::difference_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::pointer': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::reference': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1523,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Verify_offset': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1524,42): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Seek_to': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Users\Micha┼é\Downloads\cryptopp890\zdeflate.cpp(422,155): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::operator -': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,22): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Prevent_inheriting_unwrap': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1450,42): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1450,52): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::iterator_category': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::value_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::difference_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::pointer': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,40): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,31): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::reference': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1464,23): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1464,30): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrap_when_unverified': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1527,42): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13): warning C4996: 'stdext::unchecked_array_iterator<const CryptoPP::byte *>::_Seek_to': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning. [C:\Users\Micha┼é\Downloads\cryptopp890\cryptlib.vcxproj]
+  
+      Ostrze┼╝enia: 35
+      Liczba b┼é─Öd├│w: 0
+  
+  Czas, kt├│ry up┼éyn─ů┼é: 00:00:22.27
+  Wersja programu MSBuild 18.3.0-preview-25570-20+708535641 dla .NET Framework
+  Kompilacja rozpocz─Ö┼éa si─Ö 21.01.2026 15:46:50.
+  
+  Projekt ÔÇ×C:\Users\Micha┼é\Downloads\cryptopp890\cryptest.vcxprojÔÇŁ w w─Ö┼║le 1 (elementy docelowe: Build).
+  PrepareForBuild:
+    Tworzenie katalogu ÔÇ×Win32\cryptest\Debug\ÔÇŁ.
+    Dane wyj┼Ťciowe ze struktur─ů s─ů w┼é─ůczone. Formatowanie diagnostyki kompilatora b─Ödzie odzwierciedla─ç hierarchi─Ö b┼é─Öd├│w. Aby uzyska─ç wi─Öcej informacji, zobacz https://aka.ms/cpp/structured-output.
+    Tworzenie katalogu ÔÇ×Win32\cryptest\Debug\cryptest.tlog\ÔÇŁ.
+  InitializeBuildStatus:
+    Trwa tworzenie ÔÇ×Win32\cryptest\Debug\cryptest.tlog\unsuccessfulbuildÔÇŁ, poniewa┼╝ okre┼Ťlono "AlwaysCreate".
+    Modyfikowanie ÔÇ×Win32\cryptest\Debug\cryptest.tlog\unsuccessfulbuildÔÇŁ.
+  ClCompile:
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\CL.exe /c /Zi /nologo /W4 /WX- /diagnostics:column /Od /Oi /Oy- /Gm- /EHsc /RTC1 /MTd /GS /arch:SSE2 /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Win32\cryptest\Debug\\" /Fd"Win32\cryptest\Debug\vc145.pdb" /external:W4 /Gd /TP /wd4231 /wd4251 /wd4275 /wd4355 /wd4505 /analyze- /FC /errorReport:none adhoc.cpp test.cpp bench1.cpp bench2.cpp bench3.cpp datatest.cpp dlltest.cpp fipsalgt.cpp regtest1.cpp regtest2.cpp regtest3.cpp regtest4.cpp validat0.cpp validat1.cpp validat2.cpp validat3.cpp validat4.cpp validat5.cpp validat6.cpp validat7.cpp validat8.cpp validat9.cpp validat10.cpp
+    adhoc.cpp
+    test.cpp
+    bench1.cpp
+    bench2.cpp
+    bench3.cpp
+    datatest.cpp
+    dlltest.cpp
+    fipsalgt.cpp
+    regtest1.cpp
+    regtest2.cpp
+    regtest3.cpp
+    regtest4.cpp
+    validat0.cpp
+    validat1.cpp
+    validat2.cpp
+    validat3.cpp
+    validat4.cpp
+    validat5.cpp
+    validat6.cpp
+    validat7.cpp
+    Generowanie kodu...
+    Trwa kompilowanie...
+    validat8.cpp
+    validat9.cpp
+    validat10.cpp
+    Generowanie kodu...
+  Link:
+    C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\bin\HostX86\x86\link.exe /ERRORREPORT:QUEUE /OUT:"Win32\Output\Debug\\cryptest.exe" /NOLOGO /LIBPATH:Win32\Output\Debug cryptlib.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"Win32\Output\Debug\\cryptlib.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"Win32\Output\Debug\cryptest.lib" /MACHINE:X86 /SAFESEH Win32\cryptest\Debug\adhoc.obj
+    Win32\cryptest\Debug\test.obj
+    Win32\cryptest\Debug\bench1.obj
+    Win32\cryptest\Debug\bench2.obj
+    Win32\cryptest\Debug\bench3.obj
+    Win32\cryptest\Debug\datatest.obj
+    Win32\cryptest\Debug\dlltest.obj
+    Win32\cryptest\Debug\fipsalgt.obj
+    Win32\cryptest\Debug\regtest1.obj
+    Win32\cryptest\Debug\regtest2.obj
+    Win32\cryptest\Debug\regtest3.obj
+    Win32\cryptest\Debug\regtest4.obj
+    Win32\cryptest\Debug\validat0.obj
+    Win32\cryptest\Debug\validat1.obj
+    Win32\cryptest\Debug\validat2.obj
+    Win32\cryptest\Debug\validat3.obj
+    Win32\cryptest\Debug\validat4.obj
+    Win32\cryptest\Debug\validat5.obj
+    Win32\cryptest\Debug\validat6.obj
+    Win32\cryptest\Debug\validat7.obj
+    Win32\cryptest\Debug\validat8.obj
+    Win32\cryptest\Debug\validat9.obj
+    Win32\cryptest\Debug\validat10.obj
+    cryptest.vcxproj -> C:\Users\Micha┼é\Downloads\cryptopp890\Win32\Output\Debug\cryptest.exe
+  FinalizeBuildStatus:
+    Usuwanie pliku ÔÇ×Win32\cryptest\Debug\cryptest.tlog\unsuccessfulbuildÔÇŁ.
+    Modyfikowanie ÔÇ×Win32\cryptest\Debug\cryptest.tlog\cryptest.lastbuildstateÔÇŁ.
+  Kompilowanie projektu ÔÇ×C:\Users\Micha┼é\Downloads\cryptopp890\cryptest.vcxprojÔÇŁ wykonane (elementy docelowe: Build).
+  
+  Kompilacja powiod┼éa si─Ö.
+      Ostrze┼╝enia: 0
+      Liczba b┼é─Öd├│w: 0
+  
+  Czas, kt├│ry up┼éyn─ů┼é: 00:00:24.61
+  Building and assembling x64dll.asm
+   Assembling: C:\Users\Micha?\Downloads\cryptopp890\x64dll.asm
+  pch.cpp
+  dll.cpp
+  iterhash.cpp
+  Generowanie kodu...
+  algebra.cpp
+  algparam.cpp
+  allocate.cpp
+  asn.cpp
+  authenc.cpp
+  basecode.cpp
+  cbcmac.cpp
+  ccm.cpp
+  channels.cpp
+  cmac.cpp
+  cpu.cpp
+  cryptlib.cpp
+  des.cpp
+  dessp.cpp
+  dh.cpp
+  dsa.cpp
+  ec2n.cpp
+  eccrypto.cpp
+  ecp.cpp
+  emsa2.cpp
+  Generowanie kodu...
+  Trwa kompilowanie...
+  eprecomp.cpp
+  files.cpp
+  filters.cpp
+  fips140.cpp
+  fipstest.cpp
+  gcm.cpp
+  gcm_simd.cpp
+  gf2n.cpp
+  gf2n_simd.cpp
+  gfpcrypt.cpp
+  hex.cpp
+  hmac.cpp
+  hrtimer.cpp
+  integer.cpp
+C:\Users\Michał\Downloads\cryptopp890\integer.cpp(3061,12): warning C4996: 'stdext::make_checked_array_iterator': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,31):
+      kontekst tworzenia wystąpienia szablonu (najpierw najstarszy) to
+          C:\Users\Michał\Downloads\cryptopp890\integer.cpp(3060,8):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „_OutIt std::reverse_copy<const CryptoPP::byte*,stdext::checked_array_iterator<unsigned char *>>(_BidIt,_BidIt,_OutIt)” funkcji szablon
+          with
+          [
+              _OutIt=stdext::checked_array_iterator<unsigned char *>,
+              _BidIt=const CryptoPP::byte *
+          ]
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(5626,31):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „decltype(auto) std::_Get_unwrapped_n<_OutIt&,__int64>(_Iter,const _Diff)” funkcji szablon
+          with
+          [
+              _OutIt=stdext::checked_array_iterator<unsigned char *>,
+              _Iter=stdext::checked_array_iterator<unsigned char *> &,
+              _Diff=__int64
+          ]
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1512,26):
+          zobacz odwołanie do aktualnie kompilowanego szablonu zmiennych „const bool _Unwrappable_for_offset_v<stdext::checked_array_iterator<unsigned char *> &>”
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1506,44):
+          zobacz odwołanie do aktualnie kompilowanego szablonu zmiennych „const bool _Unwrappable_v<stdext::checked_array_iterator<unsigned char *> &,void>”
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1435,5):
+          zobacz odwołanie do aktualnie kompilowanego szablonu zmiennych „const bool _Allow_inheriting_unwrap_v<stdext::checked_array_iterator<unsigned char *>,void>”
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1407,22): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Prevent_inheriting_unwrap': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,40):
+      kontekst tworzenia wystąpienia szablonu (najpierw najstarszy) to
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1502,93):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „std::_Iter_diff_t<_Iter>” klasy alias szablon
+          with
+          [
+              _Iter=stdext::checked_array_iterator<unsigned char *>
+          ]
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1311,55):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „std::iterator_traits<_Iter>” klasy klasa szablon
+          with
+          [
+              _Iter=stdext::checked_array_iterator<unsigned char *>
+          ]
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(496,26):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „std::_Iterator_traits_base<_Iter,void>” klasy klasa szablon
+          with
+          [
+              _Iter=stdext::checked_array_iterator<unsigned char *>
+          ]
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(476,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::iterator_category': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(477,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::value_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(478,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::difference_type': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(479,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::pointer': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,40): warning C4996: 'stdext::checked_array_iterator<unsigned char *>': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\iterator(1501,35):
+      zobacz deklarację „stdext::checked_array_iterator”
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\__msvc_iter_core.hpp(480,31): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::reference': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1523,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Verify_offset': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1524,42): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Unwrapped': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+  
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13): warning C4996: 'stdext::checked_array_iterator<unsigned char *>::_Seek_to': warning STL4043: stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard extensions and will be removed in the future. std::span (since C++20) and gsl::span can be used instead. You can define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING or _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS to suppress this warning.
+  (kompilowanie pliku źródłowego „/integer.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\xutility(1545,13):
+      kontekst tworzenia wystąpienia szablonu (najpierw najstarszy) to
+          C:\Users\Michał\Downloads\cryptopp890\integer.cpp(3060,8):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „_OutIt std::reverse_copy<const CryptoPP::byte*,stdext::checked_array_iterator<unsigned char *>>(_BidIt,_BidIt,_OutIt)” funkcji szablon
+          with
+          [
+              _OutIt=stdext::checked_array_iterator<unsigned char *>,
+              _BidIt=const CryptoPP::byte *
+          ]
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.50.35717\include\algorithm(5654,10):
+          zobacz odwołanie do kompilowanego tworzenia wystąpienia „void std::_Seek_wrapped<_OutIt,_Ptr&>(_Iter &,_UIter)” funkcji szablon
+          with
+          [
+              _OutIt=stdext::checked_array_iterator<unsigned char *>,
+              _Ptr=unsigned char *,
+              _Iter=stdext::checked_array_iterator<unsigned char *>,
+              _UIter=unsigned char *&
+          ]
+  
+  misc.cpp
+  modes.cpp
+  mqueue.cpp
+  nbtheory.cpp
+  oaep.cpp
+  osrng.cpp
+  Generowanie kodu...
+  Trwa kompilowanie...
+  pkcspad.cpp
+  primetab.cpp
+  pssr.cpp
+  pubkey.cpp
+  queue.cpp
+  randpool.cpp
+  rdtables.cpp
+  rijndael.cpp
+  rijndael_simd.cpp
+  rng.cpp
+  rsa.cpp
+  rw.cpp
+  sha.cpp
+  sha_simd.cpp
+  simple.cpp
+  skipjack.cpp
+  sse_simd.cpp
+  strciphr.cpp
+  Generowanie kodu...
+     Trwa tworzenie biblioteki C:\Users\Michał\Downloads\cryptopp890\x64\DLL_Output\Debug\\cryptopp.lib i obiektu C:\Users\Michał\Downloads\cryptopp890\x64\DLL_Output\Debug\\cryptopp.exp
+LINK : warning LNK4281: niepożądany adres bazowy 0x42900000 dla obrazu x64; ustaw adres bazowy na wartość powyżej 4 GB, aby uzyskać najlepszą optymalizację ASLR
+  cryptdll.vcxproj -> C:\Users\Michał\Downloads\cryptopp890\x64\DLL_Output\Debug\cryptopp.dll
+  Adding MAC to DLL
+  Placing MAC ABDDF35FFE23E9EFC87B52BD079A4E01C1666A87 in C:\Users\Micha│\Downloads\cryptopp890\x64\DLL_Output\Debug\cryptopp.dll at file offset 5258856 (0x503e68).

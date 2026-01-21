@@ -1,0 +1,2 @@
+^C:\USERS\MICHAŁ\DOWNLOADS\CRYPTOPP890\X64DLL.ASM
+ml64.exe /c /nologo /D_M_X64 /W3 /Zi /Fo"x64\cryptdll\Debug\x64dll.obj" "C:\Users\Michał\Downloads\cryptopp890\x64dll.asm"

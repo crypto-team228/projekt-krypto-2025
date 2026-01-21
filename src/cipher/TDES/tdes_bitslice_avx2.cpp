@@ -679,7 +679,7 @@ void TDES_Bitslice_AVX2::DES_decrypt_bitslice(BitSliceState& bs, int key_index) 
         for (int i = 0; i < 32; ++i) {
             __m256i L = bs[i];
             __m256i R = bs[32 + i];
-            __m256i newR = xor256(L, F[32 + i]);
+            __m256i newR = xor256(L, F[i]); // __m256i newR = xor256(L, F[i+32]); ?
             bs[i] = R;
             bs[32 + i] = newR;
         }

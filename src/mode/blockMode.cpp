@@ -1,4 +1,4 @@
-#include "mode/BlockMode.hpp"
+#include "mode/blockMode.hpp"
 #include <stdexcept>
 
 void BlockMode::applyPadding(std::vector<uint8_t>& data, size_t blockSize) const

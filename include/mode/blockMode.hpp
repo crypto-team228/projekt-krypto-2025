@@ -2,7 +2,7 @@
 #include <vector>
 #include <array>
 #include "mode/mode.hpp"
-#include "mode/PaddingMode.hpp"
+#include "mode/paddingMode.hpp"
 
 class BlockMode : public Mode {
 public:
