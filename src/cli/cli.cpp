@@ -1,4 +1,4 @@
-#include <CLI\CLI.hpp>
+#include <CLI/CLI.hpp>
 #include <string>
 #include <vector>
 #include <iostream>

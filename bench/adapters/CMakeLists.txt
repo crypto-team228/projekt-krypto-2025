@@ -4,4 +4,9 @@ add_library(bench_adapters
     openssl_adapter.cpp
 )
 
-target_include_directories(bench_adapters PUBLIC ${CMAKE_SOURCE_DIR}/include ${OPENSSL_ROOT_DIR}/include ${LIBSODIUM_ROOT_DIR}/include )
+target_include_directories(bench_adapters PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${OPENSSL_INCLUDE_DIR}
+    ${CRYPTOPP_INCLUDE_DIRS}
+    ${SODIUM_INCLUDE_DIRS}
+)

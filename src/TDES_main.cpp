@@ -1,7 +1,7 @@
 #include <iostream>
 #include "utils/DataConverter.hpp"
 #include "cipher/TDES/tdes.hpp"
-#include "cipher/TDES/tdes_Bitslice_AVX2.hpp"
+#include "cipher/TDES/tdes_bitslice_avx2.hpp"
 #include "cipher/AES/aes.hpp"
 #include "mode/mode.hpp"
 #include "mode/ECB.hpp"

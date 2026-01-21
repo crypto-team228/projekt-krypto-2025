@@ -2,11 +2,11 @@
 #pragma message("cipher.hpp LOADED FROM: " __FILE__)
 
 #include "cipher/cipher.hpp"
-#include <aes.h>
-#include <modes.h>
+#include <cryptopp/aes.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/des.h>
 #include <vector>
 #include <string>
-#include <des.h>
 
 class CryptoPP_AES_ECB_Adapter : public Cipher {
 public:
