@@ -2,8 +2,9 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include "cipher/cipher.hpp"
 
-class CipherAdapter {
+class CipherAdapter : public Cipher{
 public:
     virtual ~CipherAdapter() = default;
     virtual size_t blockSize() const = 0;
