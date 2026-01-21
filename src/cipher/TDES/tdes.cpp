@@ -1,225 +1,286 @@
 #include "cipher/TDES/tdes.hpp"
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
 
-TDES::TDES(const std::vector<uint8_t>& key) {
+extern uint64_t ip_lut[8][256];
+extern uint64_t fp_lut[8][256];
+extern uint64_t e_lut[4][256];
+extern uint32_t p_lut[4][256];
+extern uint64_t pc1_lut[8][256];
+extern uint64_t pc2_lut[7][256];
+extern uint8_t  sbox_lut[8][64];
+extern const int keyShiftTable[16];
+
+
+    inline uint64_t load_be64(const uint8_t* in) noexcept
+    {
+        return (uint64_t(in[0]) << 56) |
+            (uint64_t(in[1]) << 48) |
+            (uint64_t(in[2]) << 40) |
+            (uint64_t(in[3]) << 32) |
+            (uint64_t(in[4]) << 24) |
+            (uint64_t(in[5]) << 16) |
+            (uint64_t(in[6]) << 8) |
+            (uint64_t(in[7]) << 0);
+    }
+
+    inline void store_be64(uint64_t v, uint8_t* out) noexcept
+    {
+        out[0] = uint8_t(v >> 56);
+        out[1] = uint8_t(v >> 48);
+        out[2] = uint8_t(v >> 40);
+        out[3] = uint8_t(v >> 32);
+        out[4] = uint8_t(v >> 24);
+        out[5] = uint8_t(v >> 16);
+        out[6] = uint8_t(v >> 8);
+        out[7] = uint8_t(v >> 0);
+    }
+
+    inline uint32_t rotl28(uint32_t v, int s) noexcept
+    {
+        v &= 0x0FFFFFFFu;
+        return ((v << s) | (v >> (28 - s))) & 0x0FFFFFFFu;
+    }
+
+    inline void secure_memzero(void* p, std::size_t n) noexcept
+    {
+        volatile uint8_t* v = static_cast<volatile uint8_t*>(p);
+        while (n--) *v++ = 0;
+    }
+
+    inline uint64_t ip_permute(uint64_t block) noexcept
+    {
+        return ip_lut[0][(block >> 56) & 0xFF] |
+            ip_lut[1][(block >> 48) & 0xFF] |
+            ip_lut[2][(block >> 40) & 0xFF] |
+            ip_lut[3][(block >> 32) & 0xFF] |
+            ip_lut[4][(block >> 24) & 0xFF] |
+            ip_lut[5][(block >> 16) & 0xFF] |
+            ip_lut[6][(block >> 8) & 0xFF] |
+            ip_lut[7][(block >> 0) & 0xFF];
+    }
+
+    inline uint64_t fp_permute(uint64_t block) noexcept
+    {
+        return fp_lut[0][(block >> 56) & 0xFF] |
+            fp_lut[1][(block >> 48) & 0xFF] |
+            fp_lut[2][(block >> 40) & 0xFF] |
+            fp_lut[3][(block >> 32) & 0xFF] |
+            fp_lut[4][(block >> 24) & 0xFF] |
+            fp_lut[5][(block >> 16) & 0xFF] |
+            fp_lut[6][(block >> 8) & 0xFF] |
+            fp_lut[7][(block >> 0) & 0xFF];
+    }
+
+    inline uint64_t pc1_permute(uint64_t key) noexcept
+    {
+        return pc1_lut[0][(key >> 56) & 0xFF] |
+            pc1_lut[1][(key >> 48) & 0xFF] |
+            pc1_lut[2][(key >> 40) & 0xFF] |
+            pc1_lut[3][(key >> 32) & 0xFF] |
+            pc1_lut[4][(key >> 24) & 0xFF] |
+            pc1_lut[5][(key >> 16) & 0xFF] |
+            pc1_lut[6][(key >> 8) & 0xFF] |
+            pc1_lut[7][(key >> 0) & 0xFF];
+    }
+
+    inline uint64_t pc2_permute(uint64_t cd56) noexcept
+    {
+        return pc2_lut[0][(cd56 >> 48) & 0xFF] |
+            pc2_lut[1][(cd56 >> 40) & 0xFF] |
+            pc2_lut[2][(cd56 >> 32) & 0xFF] |
+            pc2_lut[3][(cd56 >> 24) & 0xFF] |
+            pc2_lut[4][(cd56 >> 16) & 0xFF] |
+            pc2_lut[5][(cd56 >> 8) & 0xFF] |
+            pc2_lut[6][(cd56 >> 0) & 0xFF];
+    }
+
+    inline uint64_t e_expand(uint32_t r) noexcept
+    {
+        return e_lut[0][(r >> 24) & 0xFF] |
+            e_lut[1][(r >> 16) & 0xFF] |
+            e_lut[2][(r >> 8) & 0xFF] |
+            e_lut[3][(r >> 0) & 0xFF];
+    }
+
+    inline uint32_t p_permute(uint32_t x) noexcept
+    {
+        return p_lut[0][(x >> 24) & 0xFF] |
+            p_lut[1][(x >> 16) & 0xFF] |
+            p_lut[2][(x >> 8) & 0xFF] |
+            p_lut[3][(x >> 0) & 0xFF];
+    }
+
+
+TDES::TDES(const std::vector<uint8_t>& key)
+{
     setKey(key);
 }
 
 TDES::~TDES()
 {
-    secure_memzero(subkeys1.data(), sizeof(subkeys1));
-    secure_memzero(subkeys2.data(), sizeof(subkeys2));
-	secure_memzero(subkeys3.data(), sizeof(subkeys3));
+    secure_memzero(subkeys1.data(), subkeys1.size() * sizeof(SubkeySchedule::value_type));
+    secure_memzero(subkeys2.data(), subkeys2.size() * sizeof(SubkeySchedule::value_type));
+    secure_memzero(subkeys3.data(), subkeys3.size() * sizeof(SubkeySchedule::value_type));
 }
 
-size_t TDES::blockSize() const {
+size_t TDES::blockSize() const
+{
     return BLOCK_SIZE;
 }
 
 void TDES::setKey(const std::vector<uint8_t>& key)
 {
+    if (key.size() != 8 && key.size() != 16 && key.size() != 24) {
+        throw std::invalid_argument("TDES::setKey: expected 8, 16 or 24 bytes");
+    }
+
+    auto load_key64 = [](const uint8_t* k) noexcept -> uint64_t {
+        return load_be64(k);
+        };
+
     if (key.size() == 8) {
-        // 1-key 3DES
-        subkeys1 = GenerateSubkeys( DataConverter::BytesToBits(key));
+        uint64_t k1 = load_key64(key.data());
+        subkeys1 = GenerateSubkeys(k1);
         subkeys2 = subkeys1;
         subkeys3 = subkeys1;
     }
     else if (key.size() == 16) {
-        // 2-key 3DES
-        std::vector<uint8_t> k1(key.begin(), key.begin() + 8);
-        std::vector<uint8_t> k2(key.begin() + 8, key.begin() + 16);
+        uint64_t k1 = load_key64(key.data());
+        uint64_t k2 = load_key64(key.data() + 8);
 
-        subkeys1 = GenerateSubkeys(DataConverter::BytesToBits(k1));
-        subkeys2 = GenerateSubkeys(DataConverter::BytesToBits(k2));
+        subkeys1 = GenerateSubkeys(k1);
+        subkeys2 = GenerateSubkeys(k2);
         subkeys3 = subkeys1;
     }
-    else if (key.size() == 24) {
-        // 3-key 3DES
-        std::vector<uint8_t> k1(key.begin(), key.begin() + 8);
-        std::vector<uint8_t> k2(key.begin() + 8, key.begin() + 16);
-        std::vector<uint8_t> k3(key.begin() + 16, key.begin() + 24);
-
-        subkeys1 = GenerateSubkeys(DataConverter::BytesToBits(k1));
-        subkeys2 = GenerateSubkeys(DataConverter::BytesToBits(k2));
-        subkeys3 = GenerateSubkeys(DataConverter::BytesToBits(k3));
-    }
     else {
-        throw std::invalid_argument("TDES::setKey: expected 8, 16 or 24 bytes");
+        uint64_t k1 = load_key64(key.data());
+        uint64_t k2 = load_key64(key.data() + 8);
+        uint64_t k3 = load_key64(key.data() + 16);
+
+        subkeys1 = GenerateSubkeys(k1);
+        subkeys2 = GenerateSubkeys(k2);
+        subkeys3 = GenerateSubkeys(k3);
     }
 }
 
-
-void TDES::encryptBlock(const uint8_t* in, uint8_t* out) const {
+void TDES::encryptBlock(const uint8_t* in, uint8_t* out) const
+{
     if (!in || !out) return;
-    auto blockBytes = DataConverter::BytesToArray<8>(in);
-    auto blockBits = DataConverter::BytesArrayToBits(blockBytes);
 
-    auto encBits = TripleDESEncrypt(blockBits);
-    auto encBytes = DataConverter::BitsArrayToBytes(encBits);
-
-    DataConverter::ArrayToBytes(encBytes, out);
+    uint64_t block = load_be64(in);
+    uint64_t enc = TripleDESEncrypt(block);
+    store_be64(enc, out);
 }
 
-void TDES::decryptBlock(const uint8_t* in, uint8_t* out) const {
+void TDES::decryptBlock(const uint8_t* in, uint8_t* out) const
+{
     if (!in || !out) return;
-    auto blockBytes = DataConverter::BytesToArray<8>(in);
-    auto blockBits = DataConverter::BytesArrayToBits(blockBytes);
 
-    Bit64 decBits = TripleDESDecrypt(blockBits);
-	auto decBytes = DataConverter::BitsArrayToBytes(decBits);
-
-    DataConverter::ArrayToBytes(decBytes, out);
+    uint64_t block = load_be64(in);
+    uint64_t dec = TripleDESDecrypt(block);
+    store_be64(dec, out);
 }
 
-// ================= 3DES (EDE) na bitach =================
+// ================= 3DES (EDE) =================
 
-TDES::Bit64 TDES::TripleDESEncrypt(const Bit64& bits) const {
-    Bit64 r = DESEncryptBlock(bits, subkeys1);  // E(K1)
-    r = DESDecryptBlock(r, subkeys2);           // D(K2)
-    r = DESEncryptBlock(r, subkeys3);           // E(K3)
+TDES::Bit64 TDES::TripleDESEncrypt(const Bit64 bits) const
+{
+    Bit64 r = DESEncryptBlock(bits, subkeys1);
+    r = DESDecryptBlock(r, subkeys2);
+    r = DESEncryptBlock(r, subkeys3);
     return r;
 }
 
-TDES::Bit64 TDES::TripleDESDecrypt(const Bit64& bits) const {
-    Bit64 r = DESDecryptBlock(bits, subkeys3);  // D(K3)
-    r = DESEncryptBlock(r, subkeys2);           // E(K2)
-    r = DESDecryptBlock(r, subkeys1);           // D(K1)
+TDES::Bit64 TDES::TripleDESDecrypt(const Bit64 bits) const
+{
+    Bit64 r = DESDecryptBlock(bits, subkeys3);
+    r = DESEncryptBlock(r, subkeys2);
+    r = DESDecryptBlock(r, subkeys1);
     return r;
 }
 
-// ================= pojedynczy DES =================
+// ================= DES =================
 
-TDES::Bit64 TDES::DESEncryptBlock(const Bit64& block,
+TDES::Bit64 TDES::DESEncryptBlock(const Bit64 block,
     const SubkeySchedule& subkeys) const
 {
-    Bit64 permutedBlock = Permute(initialPermutation, block);
+    uint64_t ip = ip_permute(block);
 
-    Bit32 left{};
-    Bit32 right{};
-    for (std::size_t i = 0; i < 32; i++) {
-        left[i] = permutedBlock[i];
-        right[i] = permutedBlock[i + 32];
+    uint32_t left = static_cast<uint32_t>(ip >> 32);
+    uint32_t right = static_cast<uint32_t>(ip & 0xFFFFFFFFu);
+
+    for (int round = 0; round < 16; ++round) {
+        uint32_t f = FeistelFunction(right, subkeys[round]);
+        uint32_t newLeft = right;
+        right = left ^ f;
+        left = newLeft;
     }
 
-    for (std::size_t round = 0; round < 16; round++) {
-        Bit32 f = FeistelFunction(right, subkeys[round]);
-
-        std::transform(left.begin(), left.end(), f.begin(), left.begin(),
-            [](uint8_t l, uint8_t v) { return static_cast<uint8_t>(l ^ v); });
-
-        if (round < 15) {
-            std::swap(left, right);
-        }
-    }
-
-    Bit64 combined{};
-    for (std::size_t i = 0; i < 32; i++) {
-        combined[i] = left[i];
-        combined[i + 32] = right[i];
-    }
-
-    return Permute(finalPermutation, combined);
+    uint64_t preOutput = (static_cast<uint64_t>(right) << 32) | left;
+    return fp_permute(preOutput);
 }
 
-TDES::Bit64 TDES::DESDecryptBlock(const Bit64& block,
+TDES::Bit64 TDES::DESDecryptBlock(const Bit64 block,
     const SubkeySchedule& subkeys) const
 {
-    Bit64 permutedBlock = Permute(initialPermutation, block);
+    uint64_t ip = ip_permute(block);
 
-    Bit32 left{};
-    Bit32 right{};
-    for (std::size_t i = 0; i < 32; i++) {
-        left[i] = permutedBlock[i];
-        right[i] = permutedBlock[i + 32];
-    }
+    uint32_t left = static_cast<uint32_t>(ip >> 32);
+    uint32_t right = static_cast<uint32_t>(ip & 0xFFFFFFFFu);
 
     for (int round = 15; round >= 0; --round) {
-        Bit32 f = FeistelFunction(right, subkeys[round]);
-
-        std::transform(left.begin(), left.end(), f.begin(), left.begin(),
-            [](uint8_t l, uint8_t v) { return static_cast<uint8_t>(l ^ v); });
-
-        if (round > 0) {
-            std::swap(left, right);
-        }
+        uint32_t f = FeistelFunction(right, subkeys[round]);
+        uint32_t newLeft = right;
+        right = left ^ f;
+        left = newLeft;
     }
 
-    Bit64 combined{};
-    for (std::size_t i = 0; i < 32; i++) {
-        combined[i] = left[i];
-        combined[i + 32] = right[i];
-    }
-
-    return Permute(finalPermutation, combined);
+    uint64_t preOutput = (static_cast<uint64_t>(right) << 32) | left;
+    return fp_permute(preOutput);
 }
 
 // ================= Feistel =================
 
-TDES::Bit32 TDES::FeistelFunction(const Bit32& right, const Bit48& subkey) const {
-    Bit48 expanded = Permute(expansionD, right);
+TDES::Bit32 TDES::FeistelFunction(const Bit32 right, const Bit48 subkey) const
+{
+    uint64_t expanded = e_expand(right);
+    uint64_t x = expanded ^ subkey;
 
-    Bit48 xored{};
-    std::transform(expanded.begin(), expanded.end(), subkey.begin(), xored.begin(),
-        [](uint8_t r, uint8_t k) { return static_cast<uint8_t>(r ^ k); });
+    uint32_t sboxOut = 0;
+    // 8 S-boxów, ka¿dy 6 bitów
+    sboxOut = (sboxOut << 4) | sbox_lut[0][(x >> 42) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[1][(x >> 36) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[2][(x >> 30) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[3][(x >> 24) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[4][(x >> 18) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[5][(x >> 12) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[6][(x >> 6) & 0x3F];
+    sboxOut = (sboxOut << 4) | sbox_lut[7][(x >> 0) & 0x3F];
 
-    Bit32 sboxOutput{};
-    for (std::size_t i = 0; i < 8; i++) {
-        uint8_t b0 = xored[i * 6 + 0];
-        uint8_t b1 = xored[i * 6 + 1];
-        uint8_t b2 = xored[i * 6 + 2];
-        uint8_t b3 = xored[i * 6 + 3];
-        uint8_t b4 = xored[i * 6 + 4];
-        uint8_t b5 = xored[i * 6 + 5];
-
-        uint8_t row = static_cast<uint8_t>((b0 << 1) | b5);
-        uint8_t col = static_cast<uint8_t>((b1 << 3) | (b2 << 2) | (b3 << 1) | b4);
-
-        uint8_t s = sbox[i][row][col];
-        for (int j = 0; j < 4; j++) {
-            sboxOutput[i * 4 + (3 - j)] = static_cast<uint8_t>((s >> j) & 1U);
-        }
-    }
-
-    Bit32 permuted = Permute(straightPermutation, sboxOutput);
-    return permuted;
+    return p_permute(sboxOut);
 }
 
-// ================= generate subkeys =================
+// ================= Subkeys =================
 
-TDES::SubkeySchedule TDES::GenerateSubkeys(const std::vector<uint8_t>& keyBits) {
-    if (keyBits.size() != 64)
-        throw std::invalid_argument("GenerateSubkeys: expected 64 bits");
-
+TDES::SubkeySchedule TDES::GenerateSubkeys(const Bit64 key64)
+{
     SubkeySchedule subkeys{};
 
-    Bit56 permutedKey = Permute(parityBitDropTable, keyBits);
+    uint64_t permuted = pc1_permute(key64); // 56 bitów
 
-    Bit28 left{};
-    Bit28 right{};
-    for (std::size_t i = 0; i < 28; i++) {
-        left[i] = permutedKey[i];
-        right[i] = permutedKey[i + 28];
-    }
+    uint32_t c = static_cast<uint32_t>((permuted >> 28) & 0x0FFFFFFFu);
+    uint32_t d = static_cast<uint32_t>(permuted & 0x0FFFFFFFu);
 
-    for (std::size_t round = 0; round < 16; round++) {
-        left = ShiftLeft(left, keyShiftTable[round]);
-        right = ShiftLeft(right, keyShiftTable[round]);
+    for (int round = 0; round < 16; ++round) {
+        int shift = keyShiftTable[round];
+        c = rotl28(c, shift);
+        d = rotl28(d, shift);
 
-        Bit56 combined{};
-        for (std::size_t i = 0; i < 28; i++) {
-            combined[i] = left[i];
-            combined[i + 28] = right[i];
-        }
-
-        subkeys[round] = Permute(keyCompressionTable, combined);
+        uint64_t cd = (static_cast<uint64_t>(c) << 28) | d; // 56 bitów
+        subkeys[round] = pc2_permute(cd);                   // 48 bitów
     }
 
     return subkeys;
-}
-
-TDES::Bit28 TDES::ShiftLeft(const Bit28& halfKey, int shifts) const {
-    Bit28 shifted{};
-    for (std::size_t i = 0; i < 28; i++) {
-        shifted[i] = halfKey[(i + shifts) % 28];
-    }
-    return shifted;
 }

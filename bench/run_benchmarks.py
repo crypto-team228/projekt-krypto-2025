@@ -23,4 +23,5 @@ def run():
         print(r)
 
 if __name__ == "__main__":
+    print( "[*] Uruchamianie benchmarków..." )
     run()

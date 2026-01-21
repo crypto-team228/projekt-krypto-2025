@@ -20,24 +20,39 @@ void CTR::incCounter(std::array<uint8_t, 16>& counter) const
 
 std::vector<uint8_t> CTR::encrypt(const std::vector<uint8_t>& data, Cipher& cipher)
 {
-    const size_t blockSize = cipher.blockSize();
+    const size_t B = cipher.blockSize();
+    const size_t N = cipher.batchSize();
+
     std::vector<uint8_t> out(data.size());
 
     std::array<uint8_t, 16> counter = iv;
-    std::array<uint8_t, 16> keystream{};
 
-    size_t numBlocks = (data.size() + blockSize - 1) / blockSize;
+    size_t blocks = (data.size() + B - 1) / B;
+    size_t i = 0;
 
-    for (size_t i = 0; i < numBlocks; ++i) {
-        cipher.encryptBlock(counter.data(), keystream.data());
+    while (i < blocks) {
+        size_t chunk = std::min(N, blocks - i);
 
-        size_t offset = i * blockSize;
-        size_t len = std::min(blockSize, data.size() - offset);
+        // przygotuj chunk counterow
+        std::vector<uint8_t> ctrBuf(chunk * B);
+        for (size_t j = 0; j < chunk; j++) {
+            std::copy(counter.begin(), counter.begin() + B, &ctrBuf[j * B]);
+            incCounter(counter);
+        }
 
-        for (size_t j = 0; j < len; ++j)
-            out[offset + j] = static_cast<uint8_t>(data[offset + j] ^ keystream[j]);
+        // szyfrujemy countery -> keystream
+        cipher.encryptBlocks(ctrBuf.data(), ctrBuf.data(), chunk);
 
-        incCounter(counter);
+        // XOR z plaintextem
+        for (size_t j = 0; j < chunk; j++) {
+            size_t offset = (i + j) * B;
+            size_t len = std::min(B, data.size() - offset);
+
+            for (size_t k = 0; k < len; k++)
+                out[offset + k] = data[offset + k] ^ ctrBuf[j * B + k];
+        }
+
+        i += chunk;
     }
 
     return out;
@@ -45,6 +60,5 @@ std::vector<uint8_t> CTR::encrypt(const std::vector<uint8_t>& data, Cipher& ciph
 
 std::vector<uint8_t> CTR::decrypt(const std::vector<uint8_t>& data, Cipher& cipher)
 {
-    // CTR: decrypt == encrypt
     return encrypt(data, cipher);
 }

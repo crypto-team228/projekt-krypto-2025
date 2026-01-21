@@ -8,10 +8,16 @@
 
 #include "cipher/AES/aes.hpp"
 #include "cipher/TDES/tdes.hpp"
+#include "cipher/TDES/tdes_b.hpp"
+#include "cipher/TDES/tdes_bitslice_avx2.hpp"
 #include "mode/ECB.hpp"
 #include "mode/CBC.hpp"
 #include "mode/CTR.hpp"
 #include "mode/GCM.hpp"
+#include "adapters/crypto_pp_adapter.hpp"
+#include "adapters/openssl_adapter.hpp"
+#include "adapters/libsodium_adapter.hpp"
+
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -102,6 +108,13 @@ int main(int argc, char** argv)
     AES aes256;
     TDES tdes;
 
+	CryptoPP_AES_ECB_Adapter cryptoPP_aes_ecb;
+	OpenSSL_AES_ECB_Adapter openSSL_aes_ecb;
+
+	CryptoPP_3DES_ECB_Adapter cryptoPP_tdes_ecb;
+	OpenSSL_3DES_ECB_Adapter openSSL_tdes_ecb;
+
+
     std::cerr << "[*] Starting benchmarks (iters=" << iters << ")...\n";
 
     for (auto size : sizes) {
@@ -125,9 +138,59 @@ int main(int argc, char** argv)
         std::cerr << "[*] AES-256 GCM size=" << size << "\n";
         results.push_back(bench_mode<GCM>("AES-256", "GCM", aes256, 32, 16, size, iters));
 
-        // TDES (key=24, block=8) - only ECB supported (CBC/CTR/GCM require 16-byte IV)
+		// CryptoPP AES-128 (key=16, iv=16)
+		std::cerr << "[*] CryptoPP AES-128 ECB size=" << size << "\n";
+		results.push_back(bench_mode<ECB>("CryptoPP AES-128", "ECB", cryptoPP_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-128 CBC size=" << size << "\n";
+		results.push_back(bench_mode<CBC>("CryptoPP AES-128", "CBC", cryptoPP_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-128 CTR size=" << size << "\n";
+		results.push_back(bench_mode<CTR>("CryptoPP AES-128", "CTR", cryptoPP_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-128 GCM size=" << size << "\n";
+		results.push_back(bench_mode<GCM>("CryptoPP AES-128", "GCM", cryptoPP_aes_ecb, 16, 16, size, iters));
+
+		// CryptoPP AES-256 (key=32, iv=16)
+		std::cerr << "[*] CryptoPP AES-256 ECB size=" << size << "\n";
+		results.push_back(bench_mode<ECB>("CryptoPP AES-256", "ECB", cryptoPP_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-256 CBC size=" << size << "\n";
+		results.push_back(bench_mode<CBC>("CryptoPP AES-256", "CBC", cryptoPP_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-256 CTR size=" << size << "\n";
+		results.push_back(bench_mode<CTR>("CryptoPP AES-256", "CTR", cryptoPP_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] CryptoPP AES-256 GCM size=" << size << "\n";
+		results.push_back(bench_mode<GCM>("CryptoPP AES-256", "GCM", cryptoPP_aes_ecb, 32, 16, size, iters));
+
+		// OpenSSL AES-128 (key=16, iv=16)
+		std::cerr << "[*] OpenSSL AES-128 ECB size=" << size << "\n";
+		results.push_back(bench_mode<ECB>("OpenSSL AES-128", "ECB", openSSL_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-128 CBC size=" << size << "\n";
+		results.push_back(bench_mode<CBC>("OpenSSL AES-128", "CBC", openSSL_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-128 CTR size=" << size << "\n";
+		results.push_back(bench_mode<CTR>("OpenSSL AES-128", "CTR", openSSL_aes_ecb, 16, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-128 GCM size=" << size << "\n";
+		results.push_back(bench_mode<GCM>("OpenSSL AES-128", "GCM", openSSL_aes_ecb, 16, 16, size, iters));
+
+		// OpenSSL AES-256 (key=32, iv=16)
+		std::cerr << "[*] OpenSSL AES-256 ECB size=" << size << "\n";
+		results.push_back(bench_mode<ECB>("OpenSSL AES-256", "ECB", openSSL_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-256 CBC size=" << size << "\n";
+		results.push_back(bench_mode<CBC>("OpenSSL AES-256", "CBC", openSSL_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-256 CTR size=" << size << "\n";
+		results.push_back(bench_mode<CTR>("OpenSSL AES-256", "CTR", openSSL_aes_ecb, 32, 16, size, iters));
+		std::cerr << "[*] OpenSSL AES-256 GCM size=" << size << "\n";
+		results.push_back(bench_mode<GCM>("OpenSSL AES-256", "GCM", openSSL_aes_ecb, 32, 16, size, iters));
+
+
+        // TDES (key=24, block=8)
         std::cerr << "[*] TDES ECB size=" << size << "\n";
         results.push_back(bench_mode<ECB>("TDES", "ECB", tdes, 24, 8, size, iters));
+        // TDES (key=24, block=8)
+        std::cerr << "[*] CryptoPP TDES ECB size=" << size << "\n";
+        results.push_back(bench_mode<ECB>("CryptoPP TDES", "ECB", cryptoPP_tdes_ecb, 24, 8, size, iters));
+        // TDES (key=24, block=8)
+        std::cerr << "[*] OpenSSL TDES ECB size=" << size << "\n";
+        results.push_back(bench_mode<ECB>("OpenSSL TDES", "ECB", openSSL_tdes_ecb, 24, 8, size, iters));
+
+
+
     }
 
     // Write CSV

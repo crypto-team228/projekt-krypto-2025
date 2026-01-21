@@ -34,9 +34,9 @@ void BlockMode::removePadding(std::vector<uint8_t>& data, size_t blockSize) cons
     }
 }
 
-void BlockMode::xorBlock(std::array<uint8_t, 16>& a,
-    const std::array<uint8_t, 16>& b)
+void BlockMode::xorBlock(uint8_t* a, const uint8_t* b, size_t n)
 {
-    for (int i = 0; i < 16; ++i)
+    for (size_t i = 0; i < n; ++i)
         a[i] ^= b[i];
 }
+
