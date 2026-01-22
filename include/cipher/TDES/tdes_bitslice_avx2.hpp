@@ -9,6 +9,13 @@
 #include <iomanip>
 #include "cipher/cipher.hpp"
 
+struct FeistelTrace {
+    uint64_t E;      // 48 bitów po ekspansji
+    uint64_t X;      // 48 bitów po XOR z kluczem
+    uint32_t S;      // 32 bity po S-boksach
+    uint32_t P;      // 32 bity po permutacji P (czyli F)
+};
+
 class TDES_Bitslice_AVX2 final : public Cipher {
 public:
     static constexpr std::size_t BLOCK_SIZE = 8;   // 64-bit block
@@ -48,6 +55,10 @@ public:
     void encryptBlock(const uint8_t* in, uint8_t* out) const override;
     void decryptBlock(const uint8_t* in, uint8_t* out) const override;
 
+    void encryptBlock_bitslice_single(const uint8_t* in, uint8_t* out) const;
+
+    void decryptBlock_bitslice_single(const uint8_t* in, uint8_t* out) const;
+
 
     void encryptBlocks_bitslice(const uint8_t* in, uint8_t* out, std::size_t blocks) const;
     void decryptBlocks_bitslice(const uint8_t* in, uint8_t* out, std::size_t blocks) const;
@@ -84,6 +95,10 @@ private:
         int round,
         int key_index) const;
 
+    void DES_encrypt_bitslice_block(BitSliceState& bs, int key_index) const;
+
+    void DES_decrypt_bitslice_block(BitSliceState& bs, int key_index) const;
+
     // DES / 3DES na bitslice
     void DES_encrypt_bitslice(BitSliceState& bs, int key_index) const;
     void DES_decrypt_bitslice(BitSliceState& bs, int key_index) const;
@@ -92,4 +107,51 @@ private:
     void TripleDES_decrypt_bitslice(BitSliceState& bs) const;
 
     void debug_des_rounds(const uint8_t* in) const;
+    uint8_t scalar_S(int box, uint8_t x) const;
+
+    void bitslice_S(int box, const uint64_t in[6], uint64_t out[4]) const;
+
+    uint64_t DES_encrypt_scalar_block(uint64_t block, int key_index) const;
+
+    void test_des_single(const TDES_Bitslice_AVX2& tdes, uint64_t block);
+
+    static void load_block_to_bitslice(BitSliceState& bs, uint64_t block);
+
+    static uint64_t extract_block_from_bitslice(const BitSliceState& bs);
+
+    void selftest_scalar_vs_bitslice(uint64_t block, int key_index) const;
+
+    uint32_t feistel_scalar(uint32_t R, int round, int key_index) const;
+
+    static uint32_t extract_L32_lane0(const BitSliceState& bs);
+
+    static uint32_t extract_R32_lane0(const BitSliceState& bs);
+
+    static uint32_t extract_F32_lane0(const BitSliceState& F);
+
+    uint64_t subkey_scalar_from_bitslice(int key_index, int round) const;
+
+    FeistelTrace feistel_scalar_trace(uint32_t R, int round, int key_index) const;
+
+    FeistelTrace feistel_bitslice_trace_lane0(const BitSliceState& bs_R, int round, int key_index) const;
+
+    void test_feistel_round(uint32_t R, int round, int key_index) const;
+
+    static const uint8_t SBOXES[8][64];
+
+
+    inline __m256i or_bit(__m256i v, int lane, int bit) const {
+        uint64_t mask = 1ULL << bit;
+        __m256i lane_mask = _mm256_set_epi64x(
+            lane == 3 ? mask : 0,
+            lane == 2 ? mask : 0,
+            lane == 1 ? mask : 0,
+            lane == 0 ? mask : 0
+        );
+        return _mm256_or_si256(v, lane_mask);
+    }
+
+
+
+
 };

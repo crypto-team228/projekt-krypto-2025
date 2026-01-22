@@ -1,4 +1,4 @@
-#include "cipher/TDES/tdes_bitslice_avx2.hpp"
+ï»¿#include "cipher/TDES/tdes_bitslice_avx2.hpp"
 
 static inline void secure_memzero(void* p, std::size_t n) noexcept {
     volatile uint8_t* v = static_cast<volatile uint8_t*>(p);
@@ -85,36 +85,31 @@ void TDES_Bitslice_AVX2::setKey(const std::vector<uint8_t>& key)
 
 
 void TDES_Bitslice_AVX2::encryptBlocks_bitslice(const uint8_t* in, uint8_t* out, std::size_t blocks) const {
-    if (!in || !out) return;
-    if (blocks == 0) return;
+    if (!in || !out || blocks == 0) return;
 
     std::size_t full = blocks / BS_BLOCKS;
     std::size_t rem = blocks % BS_BLOCKS;
 
-    // pe³ne paczki po 32 bloki
+    // peÅ‚ne paczki po 32 bloki
     for (std::size_t i = 0; i < full * BS_BLOCKS; i += BS_BLOCKS) {
         BitSliceState bs{};
         blocks_to_bitslice(in + i * BLOCK_SIZE, BS_BLOCKS, bs);
-        IP_bitslice(bs);
         TripleDES_encrypt_bitslice(bs);
-        FP_bitslice(bs);
         bitslice_to_blocks(bs, out + i * BLOCK_SIZE, BS_BLOCKS);
     }
 
-    // ogon skalarowo
+    // ogon: singleâ€‘block bitslice, bez rekurencji
     if (rem) {
         std::size_t offset = full * BS_BLOCKS;
         for (std::size_t i = 0; i < rem; ++i) {
-            encryptBlock(in + (offset + i) * BLOCK_SIZE,
+            encryptBlock_bitslice_single(in + (offset + i) * BLOCK_SIZE,
                 out + (offset + i) * BLOCK_SIZE);
-			std::cout << "Processing tail block " << i << std::endl;
         }
     }
 }
 
 void TDES_Bitslice_AVX2::decryptBlocks_bitslice(const uint8_t* in, uint8_t* out, std::size_t blocks) const {
-    if (!in || !out) return;
-    if (blocks == 0) return;
+    if (!in || !out || blocks == 0) return;
 
     std::size_t full = blocks / BS_BLOCKS;
     std::size_t rem = blocks % BS_BLOCKS;
@@ -122,29 +117,28 @@ void TDES_Bitslice_AVX2::decryptBlocks_bitslice(const uint8_t* in, uint8_t* out,
     for (std::size_t i = 0; i < full * BS_BLOCKS; i += BS_BLOCKS) {
         BitSliceState bs{};
         blocks_to_bitslice(in + i * BLOCK_SIZE, BS_BLOCKS, bs);
-        IP_bitslice(bs);
         TripleDES_decrypt_bitslice(bs);
-        FP_bitslice(bs);
         bitslice_to_blocks(bs, out + i * BLOCK_SIZE, BS_BLOCKS);
     }
 
     if (rem) {
         std::size_t offset = full * BS_BLOCKS;
         for (std::size_t i = 0; i < rem; ++i) {
-            decryptBlock(in + (offset + i) * BLOCK_SIZE,
+            decryptBlock_bitslice_single(in + (offset + i) * BLOCK_SIZE,
                 out + (offset + i) * BLOCK_SIZE);
         }
     }
 }
+
 
 
 
 
 // --- Warstwa layoutu danych: hard-core bit-matrix transpose 32x64 ---
 
-// Za³o¿enie: BS_BLOCKS == 32
-// Wejœcie: 32 bloków po 64 bity (big-endian w bajtach)
-// Wyjœcie: 64 bit-planes, ka¿dy jako maska 32-bitowa w dolnym lane __m256i
+// Zalozenie: BS_BLOCKS == 32
+// Wejscie: 32 blokow po 64 bity (big-endian w bajtach)
+// Wyjscie: 64 bit-planes, kazdy jako maska 32-bitowa w dolnym lane __m256i
 
 static inline void transpose_32x32(uint32_t x[32]) {
     for (int i = 0; i < 16; ++i) {
@@ -270,9 +264,13 @@ void TDES_Bitslice_AVX2::blocks_to_bitslice(const uint8_t* in,
         uint32_t mask_hi = hi[bit];
         uint32_t mask_lo = lo[bit];
 
-        bs[bit] = _mm256_set1_epi32(int32_t(mask_hi));
-        bs[bit + 32] = _mm256_set1_epi32(int32_t(mask_lo));
+        int idx = bit; // zamiast 31 - bit
+
+        bs[idx] = _mm256_set1_epi32(int32_t(mask_hi));
+        bs[idx + 32] = _mm256_set1_epi32(int32_t(mask_lo));
     }
+
+
 }
 
 
@@ -288,12 +286,16 @@ void TDES_Bitslice_AVX2::bitslice_to_blocks(const BitSliceState& bs,
     uint32_t lo[32];
 
     for (int bit = 0; bit < 32; ++bit) {
-        int32_t v_hi = _mm256_cvtsi256_si32(bs[bit]);
-        int32_t v_lo = _mm256_cvtsi256_si32(bs[bit + 32]);
+        int idx = bit; // zamiast 31 - bit
+
+        int32_t v_hi = _mm256_cvtsi256_si32(bs[idx]);
+        int32_t v_lo = _mm256_cvtsi256_si32(bs[idx + 32]);
 
         hi[bit] = uint32_t(v_hi);
         lo[bit] = uint32_t(v_lo);
     }
+
+
 
     transpose_32x32(hi);
     transpose_32x32(lo);
@@ -435,7 +437,7 @@ void TDES_Bitslice_AVX2::FP_bitslice(BitSliceState& bs) {
 
 // --- Feistel F w bitslice: E-expansion + S-boxy + P ---
 
-// E-expansion: 32 -> 48 bitów
+// E-expansion: 32 -> 48 bitow
 static const uint8_t DES_E[48] = {
     32,  1,  2,  3,  4,  5,
      4,  5,  6,  7,  8,  9,
@@ -447,7 +449,7 @@ static const uint8_t DES_E[48] = {
     28, 29, 30, 31, 32,  1
 };
 
-// P-permutation: 32 -> 32 bitów
+// P-permutation: 32 -> 32 bitow
 static const uint8_t DES_P[32] = {
     16,  7, 20, 21,
     29, 12, 28, 17,
@@ -468,208 +470,671 @@ inline __m256i xor256(__m256i a, __m256i b)
 }
 
 
-void TDES_Bitslice_AVX2::feistel_bitslice(const BitSliceState& bs_R,
-    BitSliceState& bs_F,
+void TDES_Bitslice_AVX2::feistel_bitslice(const BitSliceState& bs,
+    BitSliceState& F,
     int round,
-    int key_index) const {
-    (void)round;
-    (void)key_index;
-
+    int key_index) const
+{
     __m256i Ebits[48];
 
+    // E: 32 -> 48 (z prawej poÅ‚owy bs)
     for (int i = 0; i < 48; ++i) {
-        int src = int(DES_E[i]) - 1;
-        Ebits[i] = bs_R[32 + (DES_E[i] - 1)];
-
+        int src = DES_E[i] - 1;
+        Ebits[i] = bs[32 + src];
     }
 
+    // XOR z podkluczem bitslice
     for (int i = 0; i < 48; ++i) {
-        Ebits[i] = xor256(Ebits[i], subkeys_bitslice[key_index][round][i]);
+        Ebits[i] = _mm256_xor_si256(Ebits[i], subkeys_bitslice[key_index][round][i]);
     }
 
+    // Sâ€‘boxy â†’ 32 bitâ€‘planeâ€™Ã³w w S_out
     __m256i S_out[32];
 
+    // ===== S1 =====
     {
-        __m256i a0 = Ebits[0];
-        __m256i a1 = Ebits[1];
-        __m256i a2 = Ebits[2];
-        __m256i a3 = Ebits[3];
-        __m256i a4 = Ebits[4];
-        __m256i a5 = Ebits[5];
+        __m256i a0 = Ebits[5];
+        __m256i a1 = Ebits[4];
+        __m256i a2 = Ebits[3];
+        __m256i a3 = Ebits[2];
+        __m256i a4 = Ebits[1];
+        __m256i a5 = Ebits[0];
         __m256i all1 = _mm256_set1_epi32(-1);
 
-        // --- S1 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), a1), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), a0), _mm256_and_si256(a0, a4)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), _mm256_and_si256(a4, a5)), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(a2, a4)), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), a3), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(_mm256_and_si256(a4, a5), a3), _mm256_and_si256(a2, a4)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        S_out[0] = y0;
-        S_out[1] = y1;
-        S_out[2] = y2;
-        S_out[3] = y3;
-    }
-    {
-        // S2: Ebits[6..11] -> S_out[4..7]
-        __m256i a0 = Ebits[6];
-        __m256i a1 = Ebits[7];
-        __m256i a2 = Ebits[8];
-        __m256i a3 = Ebits[9];
-        __m256i a4 = Ebits[10];
-        __m256i a5 = Ebits[11];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S2 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), a0), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), a3), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(a1, a2)), a0), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), a3), _mm256_and_si256(a2, a4)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), a1), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), a0), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a3), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(a1, a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5));
-        S_out[4] = y0;
-        S_out[5] = y1;
-        S_out[6] = y2;
-        S_out[7] = y3;
-    }
-    {
-        // S3: Ebits[12..17] -> S_out[8..11]
-        __m256i a0 = Ebits[12];
-        __m256i a1 = Ebits[13];
-        __m256i a2 = Ebits[14];
-        __m256i a3 = Ebits[15];
-        __m256i a4 = Ebits[16];
-        __m256i a5 = Ebits[17];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S3 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a4)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a4)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), a0), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), a3), _mm256_and_si256(a3, a5)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a3), _mm256_and_si256(a3, a4)), _mm256_and_si256(a2, a4)), a1), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        S_out[8] = y0;
-        S_out[9] = y1;
-        S_out[10] = y2;
-        S_out[11] = y3;
-    }
-    {
-        // S4: Ebits[18..23] -> S_out[12..15]
-        __m256i a0 = Ebits[18];
-        __m256i a1 = Ebits[19];
-        __m256i a2 = Ebits[20];
-        __m256i a3 = Ebits[21];
-        __m256i a4 = Ebits[22];
-        __m256i a5 = Ebits[23];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S4 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a4), _mm256_and_si256(a4, a5)), a3), _mm256_and_si256(a3, a5)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, _mm256_and_si256(a4, a5)), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), _mm256_and_si256(a4, a5)), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, _mm256_and_si256(a4, a5)), a3), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        S_out[12] = y0;
-        S_out[13] = y1;
-        S_out[14] = y2;
-        S_out[15] = y3;
-    }
-    {
-        // S5: Ebits[24..29] -> S_out[16..19]
-        __m256i a0 = Ebits[24];
-        __m256i a1 = Ebits[25];
-        __m256i a2 = Ebits[26];
-        __m256i a3 = Ebits[27];
-        __m256i a4 = Ebits[28];
-        __m256i a5 = Ebits[29];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S5 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a4), _mm256_and_si256(a4, a5)), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a4), a3), a2), _mm256_and_si256(a2, a5)), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), _mm256_and_si256(a4, a5)), a3), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(_mm256_and_si256(a4, a5), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(a2, a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        S_out[16] = y0;
-        S_out[17] = y1;
-        S_out[18] = y2;
-        S_out[19] = y3;
-    }
-    {
-        // S6: Ebits[30..35] -> S_out[20..23]
-        __m256i a0 = Ebits[30];
-        __m256i a1 = Ebits[31];
-        __m256i a2 = Ebits[32];
-        __m256i a3 = Ebits[33];
-        __m256i a4 = Ebits[34];
-        __m256i a5 = Ebits[35];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S6 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), _mm256_and_si256(a4, a5)), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a5)), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), a3), a2), _mm256_and_si256(a2, a4)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), a1), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), a0), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a3), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), _mm256_and_si256(a2, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a4)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a4, _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5));
-        S_out[20] = y0;
-        S_out[21] = y1;
-        S_out[22] = y2;
-        S_out[23] = y3;
-    }
-    {
-        // S7: Ebits[36..41] -> S_out[24..27]
-        __m256i a0 = Ebits[36];
-        __m256i a1 = Ebits[37];
-        __m256i a2 = Ebits[38];
-        __m256i a3 = Ebits[39];
-        __m256i a4 = Ebits[40];
-        __m256i a5 = Ebits[41];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S7 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a4), a2), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), a3), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4)), _mm256_and_si256(a0, a1)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a4, _mm256_and_si256(a4, a5)), a3), _mm256_and_si256(a3, a4)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a5, a4), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a4)), a1), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(a1, a2)), a0), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5));
-        S_out[24] = y0;
-        S_out[25] = y1;
-        S_out[26] = y2;
-        S_out[27] = y3;
-    }
-    {
-        // S8: Ebits[42..47] -> S_out[28..31]
-        __m256i a0 = Ebits[42];
-        __m256i a1 = Ebits[43];
-        __m256i a2 = Ebits[44];
-        __m256i a3 = Ebits[45];
-        __m256i a4 = Ebits[46];
-        __m256i a5 = Ebits[47];
-        __m256i all1 = _mm256_set1_epi32(-1);
-        // --- S8 (ANF) ---
-        __m256i y0 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), _mm256_and_si256(a3, a5)), _mm256_and_si256(_mm256_and_si256(a3, a4), a5)), a2), _mm256_and_si256(a2, a3)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(a1, a5)), _mm256_and_si256(a1, a4)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a5)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y1 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a5), a4), a3), _mm256_and_si256(a2, a4)), a1), _mm256_and_si256(a1, a4)), _mm256_and_si256(a1, a3)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(a1, a2)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        __m256i y2 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(a4, _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(a2, a4)), a1), _mm256_and_si256(a1, a5)), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a1, a2), a3), a5)), a0), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(a0, a4), a5)), _mm256_and_si256(a0, a3)), _mm256_and_si256(_mm256_and_si256(a0, a3), a5)), _mm256_and_si256(_mm256_and_si256(a0, a3), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5));
-        __m256i y3 = xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(xor256(all1, a4), _mm256_and_si256(a4, a5)), a3), _mm256_and_si256(a3, a5)), _mm256_and_si256(a3, a4)), a2), _mm256_and_si256(_mm256_and_si256(a2, a4), a5)), _mm256_and_si256(_mm256_and_si256(a2, a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a2, a3), a4), a5)), a1), _mm256_and_si256(_mm256_and_si256(a1, a4), a5)), _mm256_and_si256(_mm256_and_si256(a1, a3), a4)), _mm256_and_si256(_mm256_and_si256(a1, a2), a5)), _mm256_and_si256(a0, a5)), _mm256_and_si256(a0, a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a3), a4), a5)), _mm256_and_si256(a0, a2)), _mm256_and_si256(_mm256_and_si256(a0, a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a2), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a4), a5)), _mm256_and_si256(_mm256_and_si256(a0, a1), a3)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a3), a4)), _mm256_and_si256(_mm256_and_si256(a0, a1), a2)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a4), a5)), _mm256_and_si256(_mm256_and_si256(_mm256_and_si256(_mm256_and_si256(a0, a1), a2), a3), a5));
-        S_out[28] = y0;
-        S_out[29] = y1;
-        S_out[30] = y2;
-        S_out[31] = y3;
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(t_0_1, a2), t_1_3), a4), t_0_4), t_1_4), t_0_2_4), t_1_2_4), t_0_3_4), t_0_1_3_4), t_0_5), t_1_5), t_0_1_5), t_2_5), t_0_2_5), t_1_2_5), t_3_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_2_3_5), t_1_4_5), t_0_1_4_5), t_1_2_4_5), t_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), a2), t_1_2), t_0_1_2), t_0_3), t_1_3), t_2_3), t_0_2_3), t_0_4), t_1_4), t_2_4), t_0_2_4), t_0_1_2_4), t_3_4), t_0_3_4), t_1_3_4), t_2_3_4), t_0_2_3_4), a5), t_1_5), t_0_1_5), t_2_3_5), t_0_1_2_3_5), t_4_5), t_0_4_5), t_0_1_4_5), t_2_4_5), t_0_2_4_5), t_1_2_4_5), t_0_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), t_0_1), t_0_2), t_1_2), a3), t_1_3), t_0_1_3), t_0_2_3), t_0_1_2_3), a4), t_0_4), t_2_4), t_0_2_4), t_1_2_4), t_0_3_4), t_0_5), t_1_5), t_1_2_5), t_3_5), t_0_1_3_5), t_2_3_5), t_0_1_2_3_5), t_4_5), t_0_4_5), t_1_4_5), t_0_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), t_0_1_2), a3), t_2_3), t_0_2_3), t_1_2_3), a4), t_3_4), t_2_3_4), a5), t_1_5), t_2_5), t_0_2_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_4_5), t_2_4_5), t_0_2_4_5), t_1_2_4_5), t_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+
+        S_out[0] = y3;
+        S_out[1] = y2;
+        S_out[2] = y1;
+        S_out[3] = y0;
     }
 
+    // ===== S2 =====
+    {
+        __m256i a0 = Ebits[11];
+        __m256i a1 = Ebits[10];
+        __m256i a2 = Ebits[9];
+        __m256i a3 = Ebits[8];
+        __m256i a4 = Ebits[7];
+        __m256i a5 = Ebits[6];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a2), t_0_1_2), a3), t_0_3), t_1_3), t_0_4), t_1_2_4), t_0_1_2_4), t_1_3_4), t_0_1_3_4), a5), t_0_5), t_0_1_5), t_0_1_2_5), t_3_5), t_0_3_5), t_1_3_5), t_0_1_3_5), t_4_5), t_1_4_5), t_0_1_4_5), t_0_2_4_5), t_0_3_4_5), t_0_1_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), a2), t_1_3), t_2_3), t_0_2_3), t_1_2_3), a4), t_0_1_4), t_0_2_4), t_0_1_2_4), t_0_3_4), a5), t_0_1_5), t_1_2_5), t_3_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_4_5), t_0_4_5), t_1_4_5), t_2_4_5), t_0_2_4_5), t_0_1_2_4_5), t_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), a2), t_0_1_2), t_0_3), t_0_1_2_3), a4), t_2_4), t_0_2_4), t_3_4), a5), t_1_2_4_5), t_0_1_2_4_5), t_1_3_4_5), t_0_1_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), t_1_2), a3), t_0_4), t_2_4), t_1_2_4), t_3_4), t_0_3_4), a5), t_0_1_5), t_1_2_5), t_0_1_2_5), t_0_1_3_5), t_0_4_5), t_0_1_4_5), t_1_2_4_5), t_0_1_2_4_5), t_3_4_5), t_0_3_4_5);
+
+        S_out[4] = y3;
+        S_out[5] = y2;
+        S_out[6] = y1;
+        S_out[7] = y0;
+    }
+
+    // ===== S3 =====
+    {
+        __m256i a0 = Ebits[17];
+        __m256i a1 = Ebits[16];
+        __m256i a2 = Ebits[15];
+        __m256i a3 = Ebits[14];
+        __m256i a4 = Ebits[13];
+        __m256i a5 = Ebits[12];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a2), t_1_2), t_1_3), a4), a5), t_0_5), t_1_5), t_0_2_5), t_1_2_5), t_3_5), t_1_3_5), t_4_5), t_0_4_5), t_1_4_5), t_0_1_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_2_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), a2), t_0_2), t_0_1_2), t_0_3), t_1_3), t_0_1_3), t_2_3), t_0_2_3), t_1_2_3), t_0_1_2_3), a4), t_1_4), t_0_1_4), t_2_4), t_1_2_4), t_3_4), t_0_3_4), t_2_3_4), t_0_2_3_4), a5), t_0_5), t_2_5), t_0_2_5), t_1_2_5), t_0_1_2_5), t_1_3_5), t_0_1_3_5), t_0_2_3_5), t_0_1_2_3_5), t_0_4_5), t_1_4_5), t_0_1_4_5), t_2_4_5), t_0_2_4_5), t_0_1_2_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, t_0_2), t_1_2), t_0_1_2), a3), t_1_3), t_0_4), t_1_4), t_0_1_4), t_2_4), t_0_2_4), t_3_4), t_0_3_4), t_1_3_4), t_0_1_3_4), t_2_3_4), a5), t_0_1_2_5), t_0_1_2_3_5), t_4_5), t_0_4_5), t_1_4_5), t_0_1_4_5), t_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), t_0_2), t_1_2), t_0_1_2), a3), t_1_3), t_2_3), t_0_1_2_3), a4), t_2_4), t_1_2_4), t_0_1_2_4), t_1_3_4), t_0_1_3_4), t_2_3_4), t_0_5), t_2_5), t_0_2_5), t_1_2_5), t_0_1_2_5), t_3_5), t_0_1_3_5), t_2_3_5), t_0_1_2_3_5), t_4_5), t_2_4_5), t_1_2_4_5), t_0_1_2_4_5), t_3_4_5), t_2_3_4_5);
+
+        S_out[8] = y3;
+        S_out[9] = y2;
+        S_out[10] = y1;
+        S_out[11] = y0;
+    }
+
+    // ===== S4 =====
+    {
+        __m256i a0 = Ebits[23];
+        __m256i a1 = Ebits[22];
+        __m256i a2 = Ebits[21];
+        __m256i a3 = Ebits[20];
+        __m256i a4 = Ebits[19];
+        __m256i a5 = Ebits[18];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, t_0_1), a2), t_0_2), t_1_2), a3), t_0_1_2_3), t_0_4), t_1_4), t_0_1_4), t_1_2_4), t_0_1_2_4), t_3_4), t_0_3_4), t_0_2_3_4), a5), t_0_5), t_0_1_5), t_0_2_5), t_0_1_2_5), t_3_5), t_0_3_5), t_1_3_5), t_0_1_2_3_5), t_4_5), t_1_4_5), t_2_4_5), t_1_2_4_5), t_3_4_5), t_0_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), t_0_1), t_0_2), t_1_2), a3), t_1_2_3), t_0_1_2_3), a4), t_0_4), t_0_1_4), t_0_1_2_4), t_0_3_4), t_2_3_4), t_0_2_3_4), t_0_5), t_1_5), t_0_1_5), t_2_5), t_0_2_5), t_1_2_5), t_0_1_2_5), t_0_3_5), t_1_3_5), t_1_2_3_5), t_0_1_2_3_5), t_4_5), t_1_4_5), t_2_4_5), t_1_2_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, t_0_1), t_0_2), t_1_2), t_0_1_2), a3), t_0_3), t_1_3), a4), t_0_4), t_0_1_4), t_0_1_2_4), t_3_4), t_0_1_3_4), t_2_3_4), t_0_2_3_4), a5), t_1_5), t_0_1_5), t_0_2_5), t_1_3_5), t_0_1_3_5), t_0_2_3_5), t_0_1_2_3_5), t_0_1_4_5), t_2_4_5), t_1_2_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a1), t_0_1), a2), t_0_2), t_0_1_2), t_0_3), t_1_3), t_0_4), t_1_4), t_0_1_4), t_1_2_4), t_0_1_2_4), t_3_4), t_1_3_4), t_0_1_3_4), t_0_2_3_4), a5), t_0_1_5), t_2_5), t_0_2_5), t_0_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_2_3_5), t_1_4_5), t_0_1_4_5), t_2_4_5), t_1_2_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+
+        S_out[12] = y3;
+        S_out[13] = y2;
+        S_out[14] = y1;
+        S_out[15] = y0;
+    }
+
+    // ===== S5 =====
+    {
+        __m256i a0 = Ebits[29];
+        __m256i a1 = Ebits[28];
+        __m256i a2 = Ebits[27];
+        __m256i a3 = Ebits[26];
+        __m256i a4 = Ebits[25];
+        __m256i a5 = Ebits[24];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(t_0_1, t_1_2), a3), t_0_3), t_1_3), t_0_1_3), t_0_2_3), t_1_2_3), t_0_1_2_3), t_0_4), t_1_4), t_0_1_4), t_2_4), t_0_2_4), t_0_1_2_4), t_1_3_4), t_0_5), t_2_5), t_1_2_5), t_3_5), t_0_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_2_3_5), t_4_5), t_0_4_5), t_1_4_5), t_0_1_4_5), t_2_4_5), t_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_2_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), t_0_1), a2), t_0_2), t_1_2), t_0_3), t_1_3), t_2_3), t_0_2_3), t_1_2_3), t_0_1_2_3), a4), t_1_4), t_0_1_4), t_0_2_4), t_1_2_4), t_1_3_4), t_0_1_3_4), t_2_3_4), t_0_2_3_4), a5), t_0_5), t_0_1_5), t_2_5), t_1_2_5), t_3_5), t_0_3_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_2_3_5), t_0_4_5), t_1_4_5), t_2_4_5), t_0_1_2_4_5), t_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a1), a2), a3), t_0_3), t_0_1_3), t_0_2_3), t_0_1_2_3), t_2_4), t_0_3_4), t_0_2_3_4), a5), t_0_1_5), t_1_2_5), t_0_1_2_5), t_1_2_3_5), t_0_4_5), t_0_2_4_5), t_3_4_5), t_0_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a1), t_0_1), t_0_2), t_1_2), t_0_3), t_2_3), t_0_2_3), t_1_2_3), t_0_1_2_3), a4), t_2_4), t_0_2_4), t_1_2_4), t_0_3_4), t_0_1_3_4), t_1_5), t_0_1_5), t_0_2_5), t_3_5), t_0_3_5), t_0_1_3_5), t_1_2_3_5), t_0_1_4_5), t_2_4_5), t_0_2_4_5), t_1_2_4_5), t_0_1_2_4_5), t_0_3_4_5), t_2_3_4_5);
+
+        S_out[16] = y3;
+        S_out[17] = y2;
+        S_out[18] = y1;
+        S_out[19] = y0;
+    }
+
+    // ===== S6 =====
+    {
+        __m256i a0 = Ebits[35];
+        __m256i a1 = Ebits[34];
+        __m256i a2 = Ebits[33];
+        __m256i a3 = Ebits[32];
+        __m256i a4 = Ebits[31];
+        __m256i a5 = Ebits[30];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a1, t_0_1_2), a3), t_2_3), t_0_2_3), t_1_2_3), t_0_1_2_3), t_2_4), t_0_1_2_4), t_3_4), t_2_3_4), t_0_2_3_4), a5), t_0_5), t_1_2_5), t_0_1_2_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_1_2_3_5), t_0_1_2_3_5), t_0_4_5), t_0_2_4_5), t_0_1_2_4_5), t_0_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a2), t_0_1_2), t_1_3), t_0_1_4), t_1_2_4), t_3_4), t_1_3_4), t_0_5), t_1_5), t_0_1_2_5), t_3_5), t_0_3_5), t_1_3_5), t_0_1_3_5), t_4_5), t_1_2_4_5), t_0_1_2_4_5), t_3_4_5), t_0_1_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), a2), a3), t_1_3), t_1_2_3), a4), t_2_4), t_0_1_2_4), a5), t_1_2_5), t_0_1_2_5), t_3_5), t_0_3_5), t_0_1_3_5), t_1_2_3_5), t_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_0_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), t_0_1), t_0_2), t_1_2), t_0_1_2), t_0_3), t_0_1_3), t_2_3), t_0_2_3), t_1_2_3), t_0_1_2_3), a4), t_3_4), t_0_2_3_4), t_0_5), t_1_5), t_0_1_5), t_0_2_5), t_0_1_2_5), t_3_5), t_0_3_5), t_1_3_5), t_0_1_3_5), t_0_2_4_5), t_0_1_2_4_5), t_0_3_4_5), t_0_1_3_4_5), t_0_2_3_4_5);
+
+        S_out[20] = y3;
+        S_out[21] = y2;
+        S_out[22] = y1;
+        S_out[23] = y0;
+    }
+
+    // ===== S7 =====
+    {
+        __m256i a0 = Ebits[41];
+        __m256i a1 = Ebits[40];
+        __m256i a2 = Ebits[39];
+        __m256i a3 = Ebits[38];
+        __m256i a4 = Ebits[37];
+        __m256i a5 = Ebits[36];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_1_2_3_5 = _mm256_and_si256(t_2_3_5, a1);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_3_5 = _mm256_and_si256(t_1_2_3_5, a0);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a1), t_1_2), a3), t_2_3), t_1_2_3), a4), t_0_2_4), t_0_1_2_4), t_3_4), a5), t_0_2_5), t_0_1_2_5), t_0_2_3_5), t_0_1_2_3_5), t_0_1_4_5), t_0_2_4_5), t_0_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a1, t_0_1), a2), t_1_2), t_0_1_2), a3), t_0_3), t_0_2_3), t_0_1_2_3), a4), t_1_2_4), t_0_1_2_4), t_0_2_3_4), t_0_5), t_1_5), t_0_1_5), t_3_5), t_1_3_5), t_0_1_3_5), t_0_2_3_5), t_0_1_2_3_5), t_2_4_5), t_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_0_2_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), a2), t_0_1_2_3), a4), t_0_4), t_2_4), t_0_1_2_4), t_3_4), a5), t_0_5), t_2_5), t_3_5), t_1_2_3_5), t_4_5), t_0_2_4_5), t_0_1_2_4_5), t_0_3_4_5), t_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a0, a1), a3), t_1_2_3), t_0_1_2_3), t_2_4), t_3_4), t_0_3_4), t_2_3_4), t_0_2_3_4), t_0_5), t_1_5), t_0_1_5), t_2_5), t_0_1_2_5), t_0_3_5), t_1_3_5), t_1_2_3_5), t_0_1_2_3_5), t_4_5), t_2_4_5), t_1_2_4_5), t_3_4_5), t_0_3_4_5), t_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+
+        S_out[24] = y3;
+        S_out[25] = y2;
+        S_out[26] = y1;
+        S_out[27] = y0;
+    }
+
+    // ===== S8 =====
+    {
+        __m256i a0 = Ebits[47];
+        __m256i a1 = Ebits[46];
+        __m256i a2 = Ebits[45];
+        __m256i a3 = Ebits[44];
+        __m256i a4 = Ebits[43];
+        __m256i a5 = Ebits[42];
+        __m256i all1 = _mm256_set1_epi32(-1);
+
+        __m256i t_0_1 = _mm256_and_si256(a1, a0);
+        __m256i t_0_2 = _mm256_and_si256(a2, a0);
+        __m256i t_1_2 = _mm256_and_si256(a2, a1);
+        __m256i t_0_3 = _mm256_and_si256(a3, a0);
+        __m256i t_1_3 = _mm256_and_si256(a3, a1);
+        __m256i t_2_3 = _mm256_and_si256(a3, a2);
+        __m256i t_0_4 = _mm256_and_si256(a4, a0);
+        __m256i t_1_4 = _mm256_and_si256(a4, a1);
+        __m256i t_2_4 = _mm256_and_si256(a4, a2);
+        __m256i t_3_4 = _mm256_and_si256(a4, a3);
+        __m256i t_0_5 = _mm256_and_si256(a5, a0);
+        __m256i t_1_5 = _mm256_and_si256(a5, a1);
+        __m256i t_2_5 = _mm256_and_si256(a5, a2);
+        __m256i t_3_5 = _mm256_and_si256(a5, a3);
+        __m256i t_4_5 = _mm256_and_si256(a5, a4);
+        __m256i t_0_1_2 = _mm256_and_si256(t_1_2, a0);
+        __m256i t_0_1_3 = _mm256_and_si256(t_1_3, a0);
+        __m256i t_0_2_3 = _mm256_and_si256(t_2_3, a0);
+        __m256i t_1_2_3 = _mm256_and_si256(t_2_3, a1);
+        __m256i t_0_1_4 = _mm256_and_si256(t_1_4, a0);
+        __m256i t_0_2_4 = _mm256_and_si256(t_2_4, a0);
+        __m256i t_1_2_4 = _mm256_and_si256(t_2_4, a1);
+        __m256i t_0_3_4 = _mm256_and_si256(t_3_4, a0);
+        __m256i t_1_3_4 = _mm256_and_si256(t_3_4, a1);
+        __m256i t_2_3_4 = _mm256_and_si256(t_3_4, a2);
+        __m256i t_0_1_5 = _mm256_and_si256(t_1_5, a0);
+        __m256i t_0_2_5 = _mm256_and_si256(t_2_5, a0);
+        __m256i t_1_2_5 = _mm256_and_si256(t_2_5, a1);
+        __m256i t_0_3_5 = _mm256_and_si256(t_3_5, a0);
+        __m256i t_1_3_5 = _mm256_and_si256(t_3_5, a1);
+        __m256i t_2_3_5 = _mm256_and_si256(t_3_5, a2);
+        __m256i t_0_4_5 = _mm256_and_si256(t_4_5, a0);
+        __m256i t_1_4_5 = _mm256_and_si256(t_4_5, a1);
+        __m256i t_2_4_5 = _mm256_and_si256(t_4_5, a2);
+        __m256i t_3_4_5 = _mm256_and_si256(t_4_5, a3);
+        __m256i t_0_1_2_3 = _mm256_and_si256(t_1_2_3, a0);
+        __m256i t_0_1_2_4 = _mm256_and_si256(t_1_2_4, a0);
+        __m256i t_0_1_3_4 = _mm256_and_si256(t_1_3_4, a0);
+        __m256i t_0_2_3_4 = _mm256_and_si256(t_2_3_4, a0);
+        __m256i t_0_1_2_5 = _mm256_and_si256(t_1_2_5, a0);
+        __m256i t_0_1_3_5 = _mm256_and_si256(t_1_3_5, a0);
+        __m256i t_0_2_3_5 = _mm256_and_si256(t_2_3_5, a0);
+        __m256i t_0_1_4_5 = _mm256_and_si256(t_1_4_5, a0);
+        __m256i t_0_2_4_5 = _mm256_and_si256(t_2_4_5, a0);
+        __m256i t_1_2_4_5 = _mm256_and_si256(t_2_4_5, a1);
+        __m256i t_0_3_4_5 = _mm256_and_si256(t_3_4_5, a0);
+        __m256i t_1_3_4_5 = _mm256_and_si256(t_3_4_5, a1);
+        __m256i t_2_3_4_5 = _mm256_and_si256(t_3_4_5, a2);
+        __m256i t_0_1_2_4_5 = _mm256_and_si256(t_1_2_4_5, a0);
+        __m256i t_0_1_3_4_5 = _mm256_and_si256(t_1_3_4_5, a0);
+        __m256i t_0_2_3_4_5 = _mm256_and_si256(t_2_3_4_5, a0);
+
+        __m256i y0 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a1), t_0_1), a2), t_0_2), t_1_2), a3), t_0_1_3), t_0_2_3), t_0_1_2_3), a4), t_0_1_4), t_1_2_4), t_0_3_4), t_0_5), t_1_5), t_0_1_2_5), t_3_5), t_1_3_5), t_0_1_3_5), t_0_2_3_5), t_0_1_4_5), t_2_4_5), t_0_2_4_5), t_1_2_4_5), t_3_4_5), t_1_3_4_5), t_0_1_3_4_5), t_0_2_3_4_5);
+        __m256i y1 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(a1, t_1_2), a3), t_1_3), a4), t_0_4), t_0_1_4), t_0_2_4), t_0_1_2_4), t_0_3_4), t_0_2_3_4), a5), t_1_5), t_0_1_5), t_2_5), t_0_2_5), t_1_2_5), t_0_1_2_5), t_1_3_5), t_1_4_5), t_0_1_2_4_5), t_1_3_4_5), t_0_1_3_4_5);
+        __m256i y2 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), a2), t_1_3), a4), t_1_4), t_2_4), t_1_2_4), t_3_4), t_0_1_5), t_2_5), t_0_2_5), t_3_5), t_1_3_5), t_0_1_3_5), t_2_3_5), t_0_2_3_5), t_1_4_5), t_2_4_5), t_1_2_4_5), t_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+        __m256i y3 = _mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(_mm256_xor_si256(all1, a0), a1), t_0_2), t_0_1_2), a3), t_2_3), t_0_2_3), t_0_4), t_1_4), t_0_1_4), t_2_4), t_0_2_4), t_1_2_4), t_2_3_4), t_0_2_3_4), a5), t_0_5), t_0_1_5), t_1_2_5), t_0_1_2_5), t_0_3_5), t_1_3_5), t_2_3_5), t_0_2_3_5), t_0_2_4_5), t_0_1_2_4_5), t_0_3_4_5), t_0_1_3_4_5), t_2_3_4_5), t_0_2_3_4_5);
+
+        S_out[28] = y3;
+        S_out[29] = y2;
+        S_out[30] = y1;
+        S_out[31] = y0;
+    }
+
+    // Pâ€‘permutacja: 32 bitâ€‘planeâ€™Ã³w S_out â†’ F[0..31]
     for (int i = 0; i < 32; ++i) {
-        int dst = DES_P[i] - 1;
-        bs_F[dst] = S_out[i];
+        int src = DES_P[i] - 1;
+        F[i] = S_out[src];
     }
-
 }
 
 
-// --- Rundy DES / 3DES w bitslice ---
+void TDES_Bitslice_AVX2::DES_encrypt_bitslice_block(BitSliceState& bs, int key_index) const {
+    IP_bitslice(bs);
+    DES_encrypt_bitslice(bs, key_index);
+
+    // swap L/R
+    for (int i = 0; i < 32; ++i) {
+        __m256i tmp = bs[i];
+        bs[i] = bs[32 + i];
+        bs[32 + i] = tmp;
+    }
+
+    FP_bitslice(bs);
+}
+
+void TDES_Bitslice_AVX2::DES_decrypt_bitslice_block(BitSliceState& bs, int key_index) const {
+    IP_bitslice(bs);
+    DES_decrypt_bitslice(bs, key_index);
+
+    // swap L/R
+    for (int i = 0; i < 32; ++i) {
+        __m256i tmp = bs[i];
+        bs[i] = bs[32 + i];
+        bs[32 + i] = tmp;
+    }
+
+    FP_bitslice(bs);
+}
+
+
 void TDES_Bitslice_AVX2::DES_encrypt_bitslice(BitSliceState& bs, int key_index) const {
     for (int round = 0; round < 16; ++round) {
-
         BitSliceState F{};
         feistel_bitslice(bs, F, round, key_index);
 
         for (int i = 0; i < 32; ++i) {
             __m256i L = bs[i];
             __m256i R = bs[32 + i];
-
-            // F[i], NIE F[32+i]
-            __m256i newR = _mm256_xor_si256(L, F[i]);
-
-            bs[i] = R;       // L_{i+1} = R_i
-            bs[32 + i] = newR; // R_{i+1} = L_i XOR F(R_i)
+            __m256i Fbit = F[i];
+            __m256i newR = xor256(L, Fbit);
+            bs[i] = R;
+            bs[32 + i] = newR;
         }
     }
 }
-
 
 void TDES_Bitslice_AVX2::DES_decrypt_bitslice(BitSliceState& bs, int key_index) const {
     for (int round = 15; round >= 0; --round) {
@@ -679,60 +1144,80 @@ void TDES_Bitslice_AVX2::DES_decrypt_bitslice(BitSliceState& bs, int key_index) 
         for (int i = 0; i < 32; ++i) {
             __m256i L = bs[i];
             __m256i R = bs[32 + i];
-            __m256i newR = xor256(L, F[i]); // __m256i newR = xor256(L, F[i+32]); ?
+            __m256i Fbit = F[i];
+            __m256i newR = xor256(L, Fbit);
             bs[i] = R;
             bs[32 + i] = newR;
         }
     }
 }
 
+
+
+
 void TDES_Bitslice_AVX2::TripleDES_encrypt_bitslice(BitSliceState& bs) const {
-    DES_encrypt_bitslice(bs, 0);
-    DES_decrypt_bitslice(bs, 1);
-    DES_encrypt_bitslice(bs, 2);
-    for (int i = 0; i < 32; ++i) {
-        __m256i tmp = bs[i];
-        bs[i] = bs[32 + i];
-        bs[32 + i] = tmp;
-    }
+    uint32_t R = extract_block_from_bitslice(bs); 
+    DES_encrypt_bitslice_block(bs, 0);
+    DES_decrypt_bitslice_block(bs, 1);
+    DES_encrypt_bitslice_block(bs, 2);
+
 }
 
 void TDES_Bitslice_AVX2::TripleDES_decrypt_bitslice(BitSliceState& bs) const {
-    DES_decrypt_bitslice(bs, 2);
-    DES_encrypt_bitslice(bs, 1);
-    DES_decrypt_bitslice(bs, 0);
+    DES_decrypt_bitslice_block(bs, 2);
+    DES_encrypt_bitslice_block(bs, 1);
+    DES_decrypt_bitslice_block(bs, 0);
 }
 
 void TDES_Bitslice_AVX2::encryptBlock(const uint8_t* in, uint8_t* out) const {
-    alignas(32) uint8_t in32[BS_BLOCKS * BLOCK_SIZE];
-    alignas(32) uint8_t out32[BS_BLOCKS * BLOCK_SIZE];
-    debug_des_rounds(in);
-
-    // powielamy blok 32 razy
-    for (int i = 0; i < BS_BLOCKS; i++)
-        memcpy(in32 + i * BLOCK_SIZE, in, BLOCK_SIZE);
-
-    encryptBlocks_bitslice(in32, out32, BS_BLOCKS);
-
-    // zwracamy pierwszy blok
-    memcpy(out, out32, BLOCK_SIZE);
+    encryptBlock_bitslice_single(in, out);
 }
+
 void TDES_Bitslice_AVX2::decryptBlock(const uint8_t* in, uint8_t* out) const {
-    alignas(32) uint8_t in32[BS_BLOCKS * BLOCK_SIZE];
-    alignas(32) uint8_t out32[BS_BLOCKS * BLOCK_SIZE];
+    decryptBlock_bitslice_single(in, out);
+}
 
-    for (int i = 0; i < BS_BLOCKS; i++)
+void TDES_Bitslice_AVX2::encryptBlock_bitslice_single(const uint8_t* in, uint8_t* out) const {
+    if (!in || !out) return;
+
+    // 1 blok â†’ 32 kopie
+    alignas(32) uint8_t in32[BS_BLOCKS * BLOCK_SIZE];
+    for (int i = 0; i < BS_BLOCKS; ++i)
         memcpy(in32 + i * BLOCK_SIZE, in, BLOCK_SIZE);
 
-    decryptBlocks_bitslice(in32, out32, BS_BLOCKS);
+    BitSliceState bs{};
+    blocks_to_bitslice(in32, BS_BLOCKS, bs);
+
+    TripleDES_encrypt_bitslice(bs);
+
+    alignas(32) uint8_t out32[BS_BLOCKS * BLOCK_SIZE];
+    bitslice_to_blocks(bs, out32, BS_BLOCKS);
+
+    memcpy(out, out32, BLOCK_SIZE); // pierwszy blok
+}
+
+void TDES_Bitslice_AVX2::decryptBlock_bitslice_single(const uint8_t* in, uint8_t* out) const {
+    if (!in || !out) return;
+
+    alignas(32) uint8_t in32[BS_BLOCKS * BLOCK_SIZE];
+    for (int i = 0; i < BS_BLOCKS; ++i)
+        memcpy(in32 + i * BLOCK_SIZE, in, BLOCK_SIZE);
+
+    BitSliceState bs{};
+    blocks_to_bitslice(in32, BS_BLOCKS, bs);
+
+    TripleDES_decrypt_bitslice(bs);
+
+    alignas(32) uint8_t out32[BS_BLOCKS * BLOCK_SIZE];
+    bitslice_to_blocks(bs, out32, BS_BLOCKS);
 
     memcpy(out, out32, BLOCK_SIZE);
 }
+
 
 
 static void dump_bitslice_state(const char* label, const TDES_Bitslice_AVX2::BitSliceState& bs)
 {
-    // bs[0..31] = L, bs[32..63] = R
     uint32_t hi[32];
     uint32_t lo[32];
 
@@ -741,7 +1226,6 @@ static void dump_bitslice_state(const char* label, const TDES_Bitslice_AVX2::Bit
         lo[bit] = uint32_t(_mm256_cvtsi256_si32(bs[bit + 32]));
     }
 
-    // odwrócenie transpozycji
     uint32_t hi_copy[32];
     uint32_t lo_copy[32];
     memcpy(hi_copy, hi, sizeof(hi));
@@ -769,21 +1253,17 @@ void TDES_Bitslice_AVX2::debug_des_rounds(const uint8_t* in) const
     IP_bitslice(bs);
     dump_bitslice_state("After IP", bs);
 
-    // 16 rund DES
     for (int r = 0; r < 16; ++r) {
         BitSliceState L = bs;
         BitSliceState R = bs;
 
-        // L = bs[0..31], R = bs[32..63]
         BitSliceState F{};
         feistel_bitslice(bs, F, r, 0);
 
-        // nowy R = L XOR F
         for (int i = 0; i < 32; ++i) {
             R[32 + i] = xor256(L[i], F[i]);
         }
 
-        // nowy L = stare R
         for (int i = 0; i < 32; ++i) {
             R[i] = L[32 + i];
         }
@@ -799,3 +1279,494 @@ void TDES_Bitslice_AVX2::debug_des_rounds(const uint8_t* in) const
     dump_bitslice_state("After FP", bs);
 }
 
+uint8_t TDES_Bitslice_AVX2::scalar_S(int box, uint8_t x) const{
+    int row = ((x & 0b100000) >> 4) | (x & 1);
+    int col = (x >> 1) & 0b1111;
+    return SBOXES[box][row * 16 + col];
+}
+
+void TDES_Bitslice_AVX2::bitslice_S(int box, const uint64_t in[6], uint64_t out[4]) const{
+    out[0] = out[1] = out[2] = out[3] = 0;
+
+    for (int b = 0; b < 64; b++) {
+        uint8_t six =
+            ((in[0] >> b) & 1) |
+            (((in[1] >> b) & 1) << 1) |
+            (((in[2] >> b) & 1) << 2) |
+            (((in[3] >> b) & 1) << 3) |
+            (((in[4] >> b) & 1) << 4) |
+            (((in[5] >> b) & 1) << 5);
+
+        uint8_t s = scalar_S(box, six);
+
+        if (s & 1) out[0] |= (1ULL << b);
+        if (s & 2) out[1] |= (1ULL << b);
+        if (s & 4) out[2] |= (1ULL << b);
+        if (s & 8) out[3] |= (1ULL << b);
+    }
+}
+
+const uint8_t TDES_Bitslice_AVX2::SBOXES[8][64] = {
+    {
+        14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
+        0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
+        4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0,
+        15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13
+    },
+    {
+        15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10,
+        3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5,
+        0, 14, 7, 11, 10, 4, 13, 1, 5, 8, 12, 6, 9, 3, 2, 15,
+        13, 8, 10, 1, 3, 15, 4, 2, 11, 6, 7, 12, 0, 5, 14, 9
+    },
+    {
+        10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8,
+        13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1,
+        13, 6, 4, 9, 8, 15, 3, 0, 11, 1, 2, 12, 5, 10, 14, 7,
+        1, 10, 13, 0, 6, 9, 8, 7, 4, 15, 14, 3, 11, 5, 2, 12
+    },
+    {
+        7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15,
+        13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9,
+        10, 6, 9, 0, 12, 11, 7, 13, 15, 1, 3, 14, 5, 2, 8, 4,
+        3, 15, 0, 6, 10, 1, 13, 8, 9, 4, 5, 11, 12, 7, 2, 14
+    },
+    {
+        2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9,
+        14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6,
+        4, 2, 1, 11, 10, 13, 7, 8, 15, 9, 12, 5, 6, 3, 0, 14,
+        11, 8, 12, 7, 1, 14, 2, 13, 6, 15, 0, 9, 10, 4, 5, 3
+    },
+    {
+        12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11,
+        10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8,
+        9, 14, 15, 5, 2, 8, 12, 3, 7, 0, 4, 10, 1, 13, 11, 6,
+        4, 3, 2, 12, 9, 5, 15, 10, 11, 14, 1, 7, 6, 0, 8, 13
+    },
+    {
+        4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1,
+        13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6,
+        1, 4, 11, 13, 12, 3, 7, 14, 10, 15, 6, 8, 0, 5, 9, 2,
+        6, 11, 13, 8, 1, 4, 10, 7, 9, 5, 0, 15, 14, 2, 3, 12
+    },
+    {
+        13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7,
+        1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2,
+        7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
+        2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11
+    }
+};
+
+uint64_t TDES_Bitslice_AVX2::DES_encrypt_scalar_block(uint64_t block, int key_index) const {
+    // IP
+    uint64_t ip = 0;
+    for (int i = 0; i < 64; ++i) {
+        uint64_t bit = (block >> (64 - DES_IP[i])) & 1ULL;
+        ip |= bit << (63 - i);
+    }
+
+    uint32_t L = uint32_t(ip >> 32);
+    uint32_t R = uint32_t(ip & 0xFFFFFFFFu);
+
+    for (int round = 0; round < 16; ++round) {
+        uint32_t F = feistel_scalar(R, round, key_index);
+        uint32_t newL = R;
+        uint32_t newR = L ^ F;
+        L = newL;
+        R = newR;
+    }
+
+    // swap L/R
+    uint64_t pre_fp = (uint64_t(R) << 32) | uint64_t(L);
+
+    // FP
+    uint64_t out = 0;
+    for (int i = 0; i < 64; ++i) {
+        uint64_t bit = (pre_fp >> (64 - DES_FP[i])) & 1ULL;
+        out |= bit << (63 - i);
+    }
+
+    return out;
+}
+void TDES_Bitslice_AVX2::test_des_single(const TDES_Bitslice_AVX2& tdes, uint64_t block) {
+    // scalar lokalny
+    uint64_t C_scalar = DES_encrypt_scalar_block(block, 0);
+
+    // bitslice
+    TDES_Bitslice_AVX2::BitSliceState bs{};
+    load_block_to_bitslice(bs, block);
+    DES_encrypt_bitslice_block(bs, 0);
+    uint64_t C_bitslice = extract_block_from_bitslice(bs);
+
+    printf("scalar : %016llx\n", (unsigned long long)C_scalar);
+    printf("bitslice: %016llx\n", (unsigned long long)C_bitslice);
+}
+
+
+void TDES_Bitslice_AVX2::load_block_to_bitslice(BitSliceState& bs, uint64_t block)
+{
+    for (int i = 0; i < 64; ++i) {
+        uint64_t bit = (block >> (63 - i)) & 1;
+        uint64_t lane0 = bit ? ~0ULL : 0ULL;
+        bs[i] = _mm256_set_epi64x(0, 0, 0, lane0);
+    }
+}
+
+uint64_t TDES_Bitslice_AVX2::extract_block_from_bitslice(const BitSliceState& bs)
+{
+    uint64_t block = 0;
+    for (int i = 0; i < 64; ++i) {
+        __m256i v = bs[i];
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, v);
+        uint64_t lane0 = tmp[0];
+        uint64_t bit = lane0 & 1;
+        block |= bit << (63 - i);
+    }
+    return block;
+}
+
+uint32_t TDES_Bitslice_AVX2::feistel_scalar(uint32_t R, int round, int key_index) const
+{
+    uint64_t E = 0;
+    for (int i = 0; i < 48; ++i) {
+        int src = DES_E[i] - 1;
+        uint64_t bit = (R >> (31 - src)) & 1;
+        E |= bit << (47 - i);
+    }
+    uint64_t key{};
+	if (key_index == 0)
+        key = subkeys1_scalar[round];
+    else if(key_index == 1)
+        key = subkeys2_scalar[round];
+    else if(key_index == 2)
+        key = subkeys3_scalar[round];
+    else
+        throw std::invalid_argument("feistel_scalar: invalid key_index");
+    uint64_t K = key & 0xFFFFFFFFFFFFULL;
+    uint64_t X = E ^ K;
+
+    uint32_t S_out = 0;
+    for (int s = 0; s < 8; ++s) {
+        uint8_t six = (X >> (42 - 6 * s)) & 0x3F;
+        uint8_t v = scalar_S(s, six);
+        S_out |= uint32_t(v) << (28 - 4 * s);
+    }
+
+    uint32_t F = 0;
+    for (int i = 0; i < 32; ++i) {
+        int src = DES_P[i] - 1;
+        uint32_t bit = (S_out >> (31 - src)) & 1;
+        F |= bit << (31 - i);
+    }
+
+    return F;
+}
+uint32_t TDES_Bitslice_AVX2::extract_L32_lane0(const BitSliceState& bs)
+{
+    uint32_t L = 0;
+    for (int i = 0; i < 32; ++i) {
+        __m256i v = bs[i];   // lewa polowa
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, v);
+        uint64_t lane0 = tmp[0];
+        uint32_t bit = lane0 & 1;
+        L |= bit << (31 - i);
+    }
+    return L;
+}
+
+
+uint32_t TDES_Bitslice_AVX2::extract_R32_lane0(const BitSliceState& bs)
+{
+    uint32_t R = 0;
+    for (int i = 0; i < 32; ++i) {
+        __m256i v = bs[32 + i]; 
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, v);
+        uint64_t lane0 = tmp[0];
+        uint32_t bit = lane0 & 1;
+        R |= bit << (31 - i);
+    }
+    return R;
+}
+
+uint32_t TDES_Bitslice_AVX2::extract_F32_lane0(const BitSliceState& F)
+{
+    uint32_t out = 0;
+    for (int i = 0; i < 32; ++i) {
+        __m256i v = F[i];
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, v);
+        uint64_t lane0 = tmp[0];
+        uint32_t bit = lane0 & 1;
+        out |= bit << (31 - i);
+    }
+    return out;
+}
+
+uint64_t TDES_Bitslice_AVX2::subkey_scalar_from_bitslice(int key_index, int round) const
+{
+    uint64_t K = 0;
+    for (int i = 0; i < 48; ++i) {
+        __m256i v = subkeys_bitslice[key_index][round][i];
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, v);
+        uint64_t lane0 = tmp[0];
+        uint64_t bit = lane0 & 1;
+        K |= bit << (47 - i);
+    }
+    return K;
+}
+
+FeistelTrace TDES_Bitslice_AVX2::feistel_scalar_trace(uint32_t R, int round, int key_index) const
+{
+    FeistelTrace t{};
+
+    // E: 32 -> 48
+    uint64_t E = 0;
+    for (int i = 0; i < 48; ++i) {
+        int src = DES_E[i] - 1;
+        uint64_t bit = (R >> (31 - src)) & 1;
+        E |= bit << (47 - i);
+    }
+    t.E = E;
+
+    // XOR z podkluczem
+    uint64_t K = subkey_scalar_from_bitslice(key_index, round);
+    uint64_t X = E ^ K;
+    t.X = X;
+
+    // S-boksy
+    uint32_t S_out = 0;
+    for (int s = 0; s < 8; ++s) {
+        uint8_t six = (X >> (42 - 6 * s)) & 0x3F;
+        uint8_t v = scalar_S(s, six);
+        S_out |= uint32_t(v) << (28 - 4 * s);
+    }
+    t.S = S_out;
+
+    // P
+    uint32_t F = 0;
+    for (int i = 0; i < 32; ++i) {
+        int src = DES_P[i] - 1;
+        uint32_t bit = (S_out >> (31 - src)) & 1;
+        F |= bit << (31 - i);
+    }
+    t.P = F;
+
+    return t;
+}
+
+FeistelTrace TDES_Bitslice_AVX2::feistel_bitslice_trace_lane0(const BitSliceState& bs_R,
+    int round,
+    int key_index) const
+{
+    FeistelTrace t{};
+    __m256i Ebits[48];
+
+    // E w bitslice
+    for (int i = 0; i < 48; ++i) {
+        int src = DES_E[i] - 1;
+        Ebits[i] = bs_R[32 + src];
+    }
+
+    // E -> scalar lane0
+    uint64_t E = 0;
+    for (int i = 0; i < 48; ++i) {
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, Ebits[i]);
+        uint64_t lane0 = tmp[0];
+        uint64_t bit = lane0 & 1;
+        E |= bit << (47 - i);
+    }
+    t.E = E;
+
+    // XOR z podkluczem bitslice
+    for (int i = 0; i < 48; ++i) {
+        Ebits[i] = xor256(Ebits[i], subkeys_bitslice[key_index][round][i]);
+    }
+
+    // X -> scalar lane0
+    uint64_t X = 0;
+    for (int i = 0; i < 48; ++i) {
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, Ebits[i]);
+        uint64_t lane0 = tmp[0];
+        uint64_t bit = lane0 & 1;
+        X |= bit << (47 - i);
+    }
+    t.X = X;
+
+    // DEBUG: porownanie six_scalar vs six_bitslice dla lane0
+    for (int s = 0; s < 8; ++s) {
+        // scalar six z X (dokladnie tak, jak w feistel_scalar)
+        uint8_t six_scalar = (uint8_t)((X >> (42 - 6 * s)) & 0x3F);
+
+        // bitslice: wyciagamy 6 bitâ€‘planeâ€™ow dla tego Sâ€‘boksa
+        __m256i a0 = Ebits[6 * s + 0];
+        __m256i a1 = Ebits[6 * s + 1];
+        __m256i a2 = Ebits[6 * s + 2];
+        __m256i a3 = Ebits[6 * s + 3];
+        __m256i a4 = Ebits[6 * s + 4];
+        __m256i a5 = Ebits[6 * s + 5];
+
+        alignas(32) uint64_t tmp0[4], tmp1[4], tmp2[4], tmp3[4], tmp4[4], tmp5[4];
+        _mm256_storeu_si256((__m256i*)tmp0, a0);
+        _mm256_storeu_si256((__m256i*)tmp1, a1);
+        _mm256_storeu_si256((__m256i*)tmp2, a2);
+        _mm256_storeu_si256((__m256i*)tmp3, a3);
+        _mm256_storeu_si256((__m256i*)tmp4, a4);
+        _mm256_storeu_si256((__m256i*)tmp5, a5);
+
+        // b = 0 -> pierwszy blok (bit 0 w lane0)
+        int b = 0;
+        uint8_t six_bitslice =
+            (((tmp0[0] >> b) & 1) << 5) |
+            (((tmp1[0] >> b) & 1) << 4) |
+            (((tmp2[0] >> b) & 1) << 3) |
+            (((tmp3[0] >> b) & 1) << 2) |
+            (((tmp4[0] >> b) & 1) << 1) |
+            (((tmp5[0] >> b) & 1) << 0);
+
+
+        if (six_scalar != six_bitslice) {
+            printf("SBOX %d: six mismatch: scalar=%02x bitslice=%02x\n",
+                s, six_scalar, six_bitslice);
+            // mozesz tu zrobic break/return, zeby nie spamowac
+        }
+    }
+
+
+    // S-boksy bitslice (jak masz teraz), ale tylko lane0 wynikow
+    __m256i S_out_bits[32];
+
+    for (int s = 0; s < 8; ++s) {
+        __m256i a0 = Ebits[6 * s + 0];
+        __m256i a1 = Ebits[6 * s + 1];
+        __m256i a2 = Ebits[6 * s + 2];
+        __m256i a3 = Ebits[6 * s + 3];
+        __m256i a4 = Ebits[6 * s + 4];
+        __m256i a5 = Ebits[6 * s + 5];
+
+        __m256i y0 = _mm256_setzero_si256();
+        __m256i y1 = _mm256_setzero_si256();
+        __m256i y2 = _mm256_setzero_si256();
+        __m256i y3 = _mm256_setzero_si256();
+
+        alignas(32) uint64_t tmp0[4], tmp1[4], tmp2[4], tmp3[4], tmp4[4], tmp5[4];
+        _mm256_storeu_si256((__m256i*)tmp0, a0);
+        _mm256_storeu_si256((__m256i*)tmp1, a1);
+        _mm256_storeu_si256((__m256i*)tmp2, a2);
+        _mm256_storeu_si256((__m256i*)tmp3, a3);
+        _mm256_storeu_si256((__m256i*)tmp4, a4);
+        _mm256_storeu_si256((__m256i*)tmp5, a5);
+
+        auto or_bit = [](__m256i v, int lane, int bit) {
+            uint64_t mask = 1ULL << bit;
+            __m256i lane_mask = _mm256_set_epi64x(
+                lane == 3 ? mask : 0,
+                lane == 2 ? mask : 0,
+                lane == 1 ? mask : 0,
+                lane == 0 ? mask : 0
+            );
+            return _mm256_or_si256(v, lane_mask);
+            };
+
+        for (int lane = 0; lane < 4; ++lane) {
+            uint64_t w0 = tmp0[lane];
+            uint64_t w1 = tmp1[lane];
+            uint64_t w2 = tmp2[lane];
+            uint64_t w3 = tmp3[lane];
+            uint64_t w4 = tmp4[lane];
+            uint64_t w5 = tmp5[lane];
+
+            for (int b = 0; b < 64; ++b) {
+                uint8_t six =
+                    (((w0 >> b) & 1) << 5) |
+                    (((w1 >> b) & 1) << 4) |
+                    (((w2 >> b) & 1) << 3) |
+                    (((w3 >> b) & 1) << 2) |
+                    (((w4 >> b) & 1) << 1) |
+                    (((w5 >> b) & 1) << 0);
+
+                uint8_t v = scalar_S(s, six);
+
+                if (v & 0x8) y0 = or_bit(y0, lane, b);
+                if (v & 0x4) y1 = or_bit(y1, lane, b);
+                if (v & 0x2) y2 = or_bit(y2, lane, b);
+                if (v & 0x1) y3 = or_bit(y3, lane, b);
+            }
+
+        }
+
+        S_out_bits[4 * s + 0] = y0;
+        S_out_bits[4 * s + 1] = y1;
+        S_out_bits[4 * s + 2] = y2;
+        S_out_bits[4 * s + 3] = y3;
+    }
+
+    // S -> scalar lane0
+    uint32_t S = 0;
+    for (int i = 0; i < 32; ++i) {
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, S_out_bits[i]);
+        uint64_t lane0 = tmp[0];
+        uint32_t bit = lane0 & 1;
+        S |= bit << (31 - i);
+    }
+    t.S = S;
+
+    // P w bitslice
+    __m256i Fbits[32];
+    for (int i = 0; i < 32; ++i) {
+        int src = DES_P[i] - 1;
+        Fbits[i] = S_out_bits[src];
+    }
+
+    // P -> scalar lane0
+    uint32_t F = 0;
+    for (int i = 0; i < 32; ++i) {
+        alignas(32) uint64_t tmp[4];
+        _mm256_storeu_si256((__m256i*)tmp, Fbits[i]);
+        uint64_t lane0 = tmp[0];
+        uint32_t bit = lane0 & 1;
+        F |= bit << (31 - i);
+    }
+    t.P = F;
+
+    return t;
+}
+
+void TDES_Bitslice_AVX2::test_feistel_round(uint32_t R, int round, int key_index) const
+{
+    // scalar
+    FeistelTrace ts = feistel_scalar_trace(R, round, key_index);
+
+    // bitslice: zbuduj bs z R tylko w prawej polowie lane0
+    BitSliceState bs{};
+    // lewa polowa = 0
+    for (int i = 0; i < 32; ++i) {
+        bs[i] = _mm256_setzero_si256();
+    }
+    // prawa polowa = R
+    for (int i = 0; i < 32; ++i) {
+        uint32_t bit = (R >> (31 - i)) & 1;
+        uint64_t lane0 = bit ? ~0ULL : 0ULL;
+        bs[32 + i] = _mm256_set_epi64x(0, 0, 0, lane0);
+    }
+
+    FeistelTrace tb = feistel_bitslice_trace_lane0(bs, round, key_index);
+
+
+
+    printf("ROUND %d, R=%08x\n", round, R);
+    printf("  E: scalar=%012llx bitslice=%012llx\n",
+        (unsigned long long)ts.E, (unsigned long long)tb.E);
+    printf("  X: scalar=%012llx bitslice=%012llx\n",
+        (unsigned long long)ts.X, (unsigned long long)tb.X);
+    printf("  S: scalar=%08x bitslice=%08x\n",
+        ts.S, tb.S);
+    printf("  P: scalar=%08x bitslice=%08x\n",
+        ts.P, tb.P);
+}

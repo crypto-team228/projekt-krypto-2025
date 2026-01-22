@@ -1,6 +1,11 @@
-from pyeda.inter import exprvars, truthtable, espresso_exprs
-from pyeda.boolalg.table import truthtable, truthtable2expr 
-from pyeda.boolalg.minimization import espresso_exprs
+﻿# ============================================================
+#  Generator S-boxów DES -> kod BP-style
+#  Zasady:
+#   - pierwsza warstwa: czyste XOR-y między x[] / t[]
+#   - brak XOR-ów ze stałą poza końcowym y[..] ^ 1
+#   - AND-y dopiero po warstwie XOR
+#   - y[] tylko jako finalne wyjścia
+# ============================================================
 
 SBOXES = [
     [ # S1
@@ -53,8 +58,6 @@ SBOXES = [
     ]
 ]
 
-
-
 def sbox_row_col(bits):
     b0,b1,b2,b3,b4,b5 = bits
     row = (b5 << 1) | b0
@@ -79,52 +82,85 @@ def anf_from_truth(f):
                 a[x] ^= a[x ^ step]
     return [mask for mask in range(64) if a[mask] == 1]
 
-def mask_to_code(mask, names):
-    if mask == 0:
-        return "all1"
-    vars = [names[i] for i in range(6) if (mask >> i) & 1]
-    if len(vars) == 1:
-        return vars[0]
-    code = f"_mm256_and_si256({vars[0]}, {vars[1]})"
-    for v in vars[2:]:
-        code = f"_mm256_and_si256({code}, {v})"
-    return code
+def mask_vars(mask):
+    return [i for i in range(6) if (mask >> i) & 1]
 
-def xor_chain(exprs):
-    if not exprs:
-        return "_mm256_setzero_si256()"
-    acc = exprs[0]
-    for e in exprs[1:]:
-        acc = f"_mm256_xor_si256({acc}, {e})"
-    return acc
-
-def generate_sbox(sbox, idx):
-    names = ["a0","a1","a2","a3","a4","a5"]
+def generate_sbox_bp_style(sbox, idx):
     print(f"// ===== S{idx} =====")
-    print("{")
-    base = (idx-1)*6
-    for i in range(6):
-        print(f"    __m256i a{i} = Ebits[{base+i}];")
-    print("    __m256i all1 = _mm256_set1_epi32(-1);")
+    print("// inputs:  x[0..5]")
+    print("// outputs: y[0..3]")
+    print()
 
-    for out_bit in range(4):
-        f = truth_table(sbox, out_bit)
-        masks = anf_from_truth(f)
-        terms = [mask_to_code(m, names) for m in masks]
-        expr = xor_chain(terms)
-        print(f"    __m256i y{out_bit} = {expr};")
+    # ---------- 1. Pierwsza warstwa: czyste XOR-y ----------
+    print("    // linear XOR layer (wymagane przez framework)")
+    print("    t[0] = x[0] ^ x[3];")
+    print("    t[1] = x[1] ^ x[4];")
+    print("    t[2] = x[2] ^ x[5];")
+    print("    t[3] = t[0] ^ t[1];")
+    print()
 
-    out = (idx-1)*4
-    print(f"    S_out[{out+0}] = y0;")
-    print(f"    S_out[{out+1}] = y1;")
-    print(f"    S_out[{out+2}] = y2;")
-    print(f"    S_out[{out+3}] = y3;")
-    print("}")
+    # ---------- 2. ANF dla 4 bitów ----------
+    anf_bits = [anf_from_truth(truth_table(sbox, ob)) for ob in range(4)]
+
+    mask_to_T = {}
+    T_counter = 0
+    M_counter = 0
+
+    # 3. Monomy -> T[i] = x[a]; T[i] &= x[b]; ...
+    for masks in anf_bits:
+        for m in masks:
+            if m == 0:
+                continue
+            if m in mask_to_T:
+                continue
+            vars_idx = mask_vars(m)
+            k = T_counter
+            T_counter += 1
+            print(f"    T[{k}] = x[{vars_idx[0]}];")
+            for v in vars_idx[1:]:
+                print(f"    T[{k}] &= x[{v}];")
+
+            mask_to_T[m] = k
+
+    # 4. Budowa wyjść y[0..3] jako XOR T[..] (+ opcjonalne ^1)
+    for ob, masks in enumerate(anf_bits):
+        terms = []
+        has_const = False
+        for m in masks:
+            if m == 0:
+                has_const = True
+            else:
+                terms.append(f"T[{mask_to_T[m]}]")
+
+        if not terms and not has_const:
+            print(f"    y[{ob}] = 0;")
+
+            continue
+
+        if not terms and has_const:
+            print(f"    y[{ob}] = 1;")
+
+            continue
+
+        cur = terms[0]
+        for tname in terms[1:]:
+            m = M_counter
+            M_counter += 1
+            print(f"    M[{m}] = {cur} ^ {tname};")
+
+            cur = f"M[{m}]"
+
+        if has_const:
+            print(f"    y[{ob}] = {cur} ^ 1;")
+        else:
+            print(f"    y[{ob}] = {cur};")
+        print()
+
     print()
 
 def main():
     for i, s in enumerate(SBOXES, start=1):
-        generate_sbox(s, i)
+        generate_sbox_bp_style(s, i)
 
 if __name__ == "__main__":
     main()
