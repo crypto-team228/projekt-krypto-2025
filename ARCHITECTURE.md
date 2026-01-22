@@ -22,14 +22,14 @@ Zakres funkcjonalny obejmuje:
 ## przegląd architektury
 
 ### struktura modułów
-
-src/
-├── core/      → interfejsy, fabryki, logika wspólna
-├── cipher/    → AES, TDES, TDES_avx2
-├── mode/      → ECB, CBC, CTR, BlockMode
-├── utils/     → DataConverter, narzędzia pomocnicze
-└── cli/       → aplikacja CLI
-
+```
+src/  
+├── core/      → interfejsy, fabryki, logika wspólna  
+├── cipher/    → AES, TDES, TDES_avx2  
+├── mode/      → ECB, CBC, CTR, BlockMode  
+├── utils/     → DataConverter, narzędzia pomocnicze  
+└── cli/       → aplikacja CLI  
+```
 
 Dodatkowe katalogi:
 
@@ -38,40 +38,40 @@ Dodatkowe katalogi:
 - external/ – biblioteki referencyjne.
 
 ---
-
+```
 ### diagram komponentów
 
-+-------------------+        +-------------------+
-|       CLI         |        |     Benchmarks    |
-|  (crypto_app_cli) |        |   (bench_*)       |
-+---------+---------+        +---------+---------+
-|                            |
-v                            v
-+-------------------+        +-------------------+
-|   Core (API)      |<------>|   External libs   |
-| CipherFactory     |        | (CryptoPP, etc.)  |
-| ModeFactory       |        +-------------------+
-+---------+---------+
-|
-v
-+-------------------+
-|   Cipher module   |
-| AES, TDES,        |
-| TDES_avx2         |
-+---------+---------+
-|
-v
-+-------------------+
-|   Mode module     |
-| ECB, CBC, CTR     |
-| BlockMode         |
-+-------------------+
-
-+-------------------+
-|   Utils           |
-| DataConverter     |
-+-------------------+
-
++-------------------+        +-------------------+  
+|       CLI         |        |     Benchmarks    |  
+|  (crypto_app_cli) |        |   (bench_*)       |  
++---------+---------+        +---------+---------+  
+|                            |  
+v                            v  
++-------------------+        +-------------------+  
+|   Core (API)      |<------>|   External libs   |  
+| CipherFactory     |        | (CryptoPP, etc.)  |  
+| ModeFactory       |        +-------------------+  
++---------+---------+  
+|  
+v  
++-------------------+  
+|   Cipher module   |  
+| AES, TDES,        |  
+| TDES_avx2         |  
++---------+---------+  
+|  
+v  
++-------------------+  
+|   Mode module     |  
+| ECB, CBC, CTR     |  
+| BlockMode         |  
++-------------------+  
+  
++-------------------+  
+|   Utils           |  
+| DataConverter     |  
++-------------------+  
+```
 
 ---
 
@@ -118,7 +118,7 @@ BlockMode definiuje szkielet operacji, a konkretne tryby implementują szczegó�
 ---
 
 ### pipeline kryptograficzny
-
+```
 Input bytes
 ↓
 Padding
@@ -128,12 +128,12 @@ Tryb pracy (CBC/CTR/ECB)
 Algorytm (AES/TDES/TDES_avx2)
 ↓
 Output bytes
-
+```
 
 ---
 
 ### diagram sekwencji (cli → szyfrowanie)
-
+```
 User
 |
 |  args (--text, --key, --algorithm, --mode, ...)
@@ -155,7 +155,7 @@ encode output
 |
 v
 stdout
-
+```
 
 ---
 
@@ -166,7 +166,7 @@ stdout
 CLI umożliwia wybór algorytmu, trybu, paddingu, kodowania oraz operacji encrypt/decrypt.
 
 ### przykład użycia
-
+```
 crypto_app_cli \
 --text "Hello" \
 --text-encoding utf8 \
@@ -178,7 +178,7 @@ crypto_app_cli \
 --operation encrypt \
 --padding PKCS7 \
 --output-encoding hex
-
+```
 
 ---
 
